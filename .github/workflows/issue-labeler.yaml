@@ -15,23 +15,29 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
-            
-            // Default labels to apply to all issues
             const defaultLabels = ['pending-review'];
             
-            // Add labels based on issue title prefix
-            if (issue.hunt_type.startsWith('[H]')) {
-              defaultLabels.push('hypothesis-driven');
-            } else if (issue.hunt_type.startsWith('[B]')) {
-              defaultLabels.push('baseline');
-            } else if (issue.hunt_type.startsWith('[M]')) {
-              defaultLabels.push('model-assisted');
+            // Parse the issue body to get the hunt type
+            const issueBody = issue.body;
+            const huntTypeMatch = issueBody.match(/### Hunt Type 🔥\s*\n\s*(Flames|Embers|Alchemy)/);
+            
+            if (huntTypeMatch) {
+              const huntType = huntTypeMatch[1];
+              
+              // Add labels based on hunt type
+              if (huntType.includes('Flames')) {
+                defaultLabels.push('hypothesis-driven');
+              } else if (huntType.includes('Embers')) {
+                defaultLabels.push('baseline');
+              } else if (huntType.includes('Alchemy')) {
+                defaultLabels.push('model-assisted');
+              }
             }
             
             // Add labels to the issue
             await github.rest.issues.addLabels({
-              owner: 'THOR-Collective', 
-              repo: 'HEARTH',       
+              owner: context.repo.owner,
+              repo: context.repo.name,
               issue_number: issue.number,
               labels: defaultLabels
             });
