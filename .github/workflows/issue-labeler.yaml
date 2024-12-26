@@ -3,6 +3,11 @@ on:
   issues:
     types: [opened]
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to label'
+        required: true
+        type: number
 
 jobs:
   label-new-issues:
