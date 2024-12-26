@@ -15,29 +15,41 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
-            const defaultLabels = ['pending-review'];
+            console.log('Context payload:', JSON.stringify(context.payload));
             
-            // Parse the issue body to get the hunt type
-            const issueBody = issue.body;
-            const huntTypeMatch = issueBody.match(/### Hunt Type 🔥\s*\n\s*(Flames|Embers|Alchemy)/);
-            
-            if (huntTypeMatch) {
-              const huntType = huntTypeMatch[1];
-              
-              // Add labels based on hunt type
-              if (huntType.includes('Flames')) {
-                defaultLabels.push('hypothesis-driven');
-              } else if (huntType.includes('Embers')) {
-                defaultLabels.push('baseline');
-              } else if (huntType.includes('Alchemy')) {
-                defaultLabels.push('model-assisted');
-              }
+            // Safety check
+            if (!issue) {
+              console.log('Issue object is undefined');
+              return;
             }
             
-            // Add labels to the issue
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              issue_number: issue.number,
-              labels: defaultLabels
-            });
+            const defaultLabels = ['pending-review'];
+            
+            // Try to get form data from issue body
+            try {
+              // Get form response data
+              const formData = JSON.parse(issue.body);
+              const huntType = formData.hunt_type;
+              
+              if (huntType) {
+                if (huntType.includes('Flames')) {
+                  defaultLabels.push('hypothesis-driven');
+                } else if (huntType.includes('Embers')) {
+                  defaultLabels.push('baseline'); 
+                } else if (huntType.includes('Alchemy')) {
+                  defaultLabels.push('model-assisted');
+                }
+              }
+            
+              // Add labels
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                issue_number: issue.number,
+                labels: defaultLabels
+              });
+            
+            } catch (error) {
+              console.log('Error processing form data:', error);
+              console.log('Raw issue body:', issue.body);
+            }
