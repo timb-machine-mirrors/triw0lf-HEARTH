@@ -15,41 +15,37 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
-            console.log('Context payload:', JSON.stringify(context.payload));
-            
-            // Safety check
             if (!issue) {
-              console.log('Issue object is undefined');
+              console.log('No issue data found');
               return;
             }
-            
+
             const defaultLabels = ['pending-review'];
             
-            // Try to get form data from issue body
+            // Parse form data to get hunt type
             try {
-              // Get form response data
-              const formData = JSON.parse(issue.body);
-              const huntType = formData.hunt_type;
-              
-              if (huntType) {
-                if (huntType.includes('Flames')) {
-                  defaultLabels.push('hypothesis-driven');
-                } else if (huntType.includes('Embers')) {
-                  defaultLabels.push('baseline'); 
-                } else if (huntType.includes('Alchemy')) {
-                  defaultLabels.push('model-assisted');
+              if (issue.body) {
+                const match = issue.body.match(/### Hunt Type 🔥\s*\n\n([^\n]+)/);
+                if (match) {
+                  const huntType = match[1];
+                  
+                  if (huntType.includes('Flames')) {
+                    defaultLabels.push('hypothesis-driven');
+                  } else if (huntType.includes('Embers')) {
+                    defaultLabels.push('baseline');
+                  } else if (huntType.includes('Alchemy')) {
+                    defaultLabels.push('model-assisted');
+                  }
                 }
               }
-            
-              // Add labels
+              
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.name,
                 issue_number: issue.number,
                 labels: defaultLabels
               });
-            
             } catch (error) {
-              console.log('Error processing form data:', error);
-              console.log('Raw issue body:', issue.body);
+              console.log('Error:', error);
+              console.log('Issue body:', issue.body);
             }
