@@ -15,21 +15,11 @@ jobs:
       - name: Add pending review label
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |
             github.rest.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               labels: ['pending-review']
-            })
-
-      - name: Add comment
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Thank you for your submission! Your hunt idea has been tagged for review by the THOR team. We aim to review all submissions within 5 business days.'
             })
