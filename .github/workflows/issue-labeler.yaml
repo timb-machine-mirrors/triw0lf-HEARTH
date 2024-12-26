@@ -1,23 +1,56 @@
-name: Add Review Label
+name: Label New Issues
 
 on:
   issues:
     types: [opened]
-  workflow_dispatch:
 
 jobs:
-  add-label:
+  issue-labeler:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Add pending review label
-        if: github.event.issue.number
-        uses: actions/github-script@v6
+      - name: Label issues based on Hunt Type
+        uses: actions/github-script@v7
         with:
           script: |
+            const issue = context.payload.issue;
+
+            if (!issue) {
+              throw new Error("No issue found in the payload. This action is only triggered for new issues.");
+            }
+
+            const owner = context.payload.repository.owner.login;
+            const repo = context.payload.repository.name;
+
+            console.log(`Owner: ${owner}, Repo: ${repo}`);
+
+            let labelsToAdd = ['pending-review'];
+
+            const huntTypeRegex = /### Hunt Type 🔥\n\n\{(.+?)\}/;
+            const match = issue.body.match(huntTypeRegex);
+
+            if (match) {
+              const huntType = match[1].split("=>")[0].trim();
+              console.log(`Extracted Hunt Type: ${huntType}`);
+              
+              if (huntType.includes("Flames")) {
+                labelsToAdd.push('hypothesis-driven');
+              } else if (huntType.includes("Baseline")) {
+                labelsToAdd.push('baseline');
+              } else if (huntType.includes("Model")) {
+                labelsToAdd.push('model-assisted');
+              } else {
+                console.log(`Unknown Hunt Type: ${huntType}. No specific label added.`);
+              }
+            } else {
+              console.log("No Hunt Type found in the issue body.");
+            }
+
+            console.log(`Labels to Add: ${labelsToAdd}`);
+
             await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['pending-review']
-            })
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: labelsToAdd,
+            });
