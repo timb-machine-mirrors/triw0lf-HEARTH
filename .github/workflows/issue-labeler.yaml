@@ -24,7 +24,7 @@ jobs:
 
             console.log(`Owner: ${owner}, Repo: ${repo}`);
 
-            let labelsToAdd = ['pending-review'];
+            let labelsToAdd = ['needs-triage'];
 
             const huntTypeRegex = /### Hunt Type 🔥\n\n\{(.+?)\}/;
             const match = issue.body.match(huntTypeRegex);
