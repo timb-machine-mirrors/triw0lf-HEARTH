@@ -12,33 +12,59 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            try {
-              const issueData = await github.rest.issues.get({
-                owner: 'THOR-Collective',
-                repo: 'HEARTH',
-                issue_number: context.payload.issue.number
-              });
-              
-              const issue = issueData.data;
-              const defaultLabels = ['pending-review'];
-              
-              const formMatch = issue.body?.match(/### Hunt Type 🔥\s*\n\n([^\n]+)/);
-              if (formMatch) {
-                const huntType = formMatch[1];
-                console.log('Hunt type found:', huntType);
-                
-                if (huntType.includes('Flames')) defaultLabels.push('hypothesis-driven');
-                if (huntType.includes('Embers')) defaultLabels.push('baseline');
-                if (huntType.includes('Alchemy')) defaultLabels.push('model-assisted');
-              }
-
-              await github.rest.issues.addLabels({
-                owner: 'THOR-Collective',
-                repo: 'HEARTH',
-                issue_number: issue.number,
-                labels: defaultLabels
-              });
-            } catch (error) {
-              console.error('Error:', error);
-              console.log('Issue data:', context.payload.issue);
-            }
+             console.log('Event:', context.eventName);
+             console.log('Action:', context.payload.action);
+             console.log('Repository:', context.repo.owner + '/' + context.repo.name);
+             console.log('Full payload:', JSON.stringify(context.payload, null, 2));
+             
+             try {
+               console.log('Fetching issue data...');
+               const issueData = await github.rest.issues.get({
+                 owner: 'THOR-Collective',
+                 repo: 'HEARTH', 
+                 issue_number: context.payload.issue?.number || context.issue?.number
+               });
+               
+               console.log('Issue data retrieved:', JSON.stringify(issueData.data, null, 2));
+               
+               const issue = issueData.data;
+               const defaultLabels = ['pending-review'];
+               
+               console.log('Parsing issue body for hunt type...');
+               const formMatch = issue.body?.match(/### Hunt Type 🔥\s*\n\n([^\n]+)/);
+               
+               if (formMatch) {
+                 const huntType = formMatch[1];
+                 console.log('Hunt type found:', huntType);
+                 
+                 if (huntType.includes('Flames')) {
+                   defaultLabels.push('hypothesis-driven');
+                   console.log('Added hypothesis-driven label');
+                 }
+                 if (huntType.includes('Embers')) {
+                   defaultLabels.push('baseline');
+                   console.log('Added baseline label');
+                 }
+                 if (huntType.includes('Alchemy')) {
+                   defaultLabels.push('model-assisted'); 
+                   console.log('Added model-assisted label');
+                 }
+               } else {
+                 console.log('No hunt type match found in body:', issue.body);
+               }
+  
+               console.log('Adding labels:', defaultLabels);
+               await github.rest.issues.addLabels({
+                 owner: 'THOR-Collective',
+                 repo: 'HEARTH',
+                 issue_number: issue.number,
+                 labels: defaultLabels
+               });
+               
+               console.log('Labels added successfully');
+             } catch (error) {
+               console.error('Error details:', error.message);
+               console.error('Error stack:', error.stack);
+               console.log('Context payload:', context.payload);
+               console.log('Issue reference:', context.payload?.issue || context.issue);
+             }
