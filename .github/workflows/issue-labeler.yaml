@@ -29,8 +29,8 @@ jobs:
             
             // Add labels to the issue
             await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.name,
+              owner: 'THOR-Collective', 
+              repo: 'HEARTH',       
               issue_number: issue.number,
               labels: defaultLabels
             });
