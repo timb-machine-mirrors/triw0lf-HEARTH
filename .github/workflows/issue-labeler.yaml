@@ -1,51 +1,35 @@
-name: Issue Labeler
+name: Add Review Label
+
 on:
   issues:
     types: [opened]
   workflow_dispatch:
-    inputs:
-      issue_number:
-        description: 'Issue number to label'
-        required: true
-        type: number
 
 jobs:
-  label-new-issues:
+  add-label:
     runs-on: ubuntu-latest
-    if: github.repository == 'THOR-Collective/HEARTH'
+    permissions:
+      issues: write
+    
     steps:
-      - uses: actions/github-script@v7
+      - name: Add pending review label
+        uses: actions/github-script@v6
         with:
           script: |
-             const issueNumber = context.eventName === 'workflow_dispatch' 
-              ? context.payload.inputs.issue_number
-              : context.payload.issue?.number;
-            
-              console.log('Processing issue:', issueNumber);
-            
-              try {
-                const issue = await github.rest.issues.get({
-                  owner: context.repo.owner || 'THOR-Collective',
-                  repo: context.repo.name || 'HEARTH',
-                  issue_number: parseInt(issueNumber)
-                });
-                
-                const defaultLabels = ['pending-review'];
-                if (issue.data.body) {
-                  const match = issue.data.body.match(/### Hunt Type 🔥\s*\n\n([^\n]+)/);
-                  if (match) {
-                    if (match[1].includes('Flames')) defaultLabels.push('hypothesis-driven');
-                    if (match[1].includes('Embers')) defaultLabels.push('baseline');
-                    if (match[1].includes('Alchemy')) defaultLabels.push('model-assisted');
-                  }
-                }
-                
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner || 'THOR-Collective',
-                  repo: context.repo.name || 'HEARTH', 
-                  issue_number: parseInt(issueNumber),
-                  labels: defaultLabels
-                });
-              } catch (error) {
-                console.error(`Error processing issue #${issueNumber}:`, error);
-              }
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['pending-review']
+            })
+
+      - name: Add comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Thank you for your submission! Your hunt idea has been tagged for review by the THOR team. We aim to review all submissions within 5 business days.'
+            })
