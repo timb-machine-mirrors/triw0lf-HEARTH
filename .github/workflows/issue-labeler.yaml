@@ -20,11 +20,11 @@ jobs:
             const defaultLabels = ['pending-review'];
             
             // Add labels based on issue title prefix
-            if (issue.title.startsWith('[H]')) {
+            if (issue.hunt_type.startsWith('[H]')) {
               defaultLabels.push('hypothesis-driven');
-            } else if (issue.title.startsWith('[B]')) {
+            } else if (issue.hunt_type.startsWith('[B]')) {
               defaultLabels.push('baseline');
-            } else if (issue.title.startsWith('[M]')) {
+            } else if (issue.hunt_type.startsWith('[M]')) {
               defaultLabels.push('model-assisted');
             }
             
