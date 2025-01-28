@@ -37,7 +37,7 @@ We welcome contributions to the Hunting Exchange And Research Threat Hub! Contri
 
 We welcome contributions from all threat hunters! To share your ideas:
 
-1. Go to [Submit New Issue](https://github.com/triw0lf/HEARTH/issues/new/choose)
+1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
 2. Select "HEARTH Hunt Submission Form"
 3. Fill out the required information about your hunt
 4. Submit for review
@@ -53,10 +53,10 @@ We welcome contributions from all threat hunters! To share your ideas:
 Got a half-baked idea or something that needs work? Submit it to **The Forge**, where we collect and refine early-stage threat hunting ideas for all hunt types.
 
 - Browse [The Forge](/Forge/Forge.md)
-- Contribute using the [Forge - Early Stage Hunt Idea form](https://github.com/triw0lf/HEARTH/issues/new/choose)
+- Contribute using the [Forge - Early Stage Hunt Idea form](https://github.com/THORCollective/HEARTH/issues/new/choose)
 
 ### 🧯 Have feedback or suggestions?
-Use our standard [HEARTH Issue Template](https://github.com/triw0lf/HEARTH/issues/new/choose) for:
+Use our standard [HEARTH Issue Template](https://github.com/THORCollective/HEARTH/issues/new/choose) for:
 - Bug reports
 - Feature requests
 - General feedback
