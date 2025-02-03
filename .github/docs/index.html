@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEARTH Repo Explorer</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #file-tree { list-style-type: none; padding: 0; }
+        .folder { cursor: pointer; font-weight: bold; }
+        .file { margin-left: 20px; }
+    </style>
+</head>
+<body>
+    <h1>HEARTH Repository</h1>
+    <ul id="file-tree"></ul>
+    <script>
+        async function fetchRepoContents(path = '') {
+            const repo = "THORCollective/HEARTH"; // Update with actual repo name
+            const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data;
+        }
+
+        async function renderFileTree(path = '', element = document.getElementById('file-tree')) {
+            const items = await fetchRepoContents(path);
+            items.forEach(item => {
+                const li = document.createElement('li');
+                if (item.type === 'dir') {
+                    li.innerHTML = `<span class="folder">📁 ${item.name}</span>`;
+                    const sublist = document.createElement('ul');
+                    li.appendChild(sublist);
+                    li.querySelector('.folder').addEventListener('click', () => {
+                        if (sublist.innerHTML === '') {
+                            renderFileTree(item.path, sublist);
+                        } else {
+                            sublist.innerHTML = '';
+                        }
+                    });
+                } else {
+                    li.innerHTML = `<a class="file" href="${item.html_url}" target="_blank">📄 ${item.name}</a>`;
+                }
+                element.appendChild(li);
+            });
+        }
+        renderFileTree();
+    </script>
+</body>
+</html>
