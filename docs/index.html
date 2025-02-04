@@ -1,155 +1,125 @@
-import React, { useState, useEffect } from 'react';
-import { FolderOpen, File, ChevronRight, ChevronDown, Github, ExternalLink, ArrowLeft } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEARTH Repo Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #file-tree, #markdown-content {
+            width: 80%;
+            margin: auto;
+            text-align: left;
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        #file-tree {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .folder {
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .folder:hover, .file:hover {
+            background-color: #333;
+        }
+        .file {
+            margin-left: 20px;
+            display: block;
+            text-decoration: none;
+            color: #80cbc4;
+        }
+        #markdown-content {
+            display: none;
+            padding: 20px;
+            color: #fff;
+        }
+        #back-button {
+            display: none;
+            margin-bottom: 20px;
+            cursor: pointer;
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+    <h1>HEARTH Repository</h1>
+    <div id="back-button">⬅ Back to File Explorer</div>
+    <ul id="file-tree"></ul>
+    <div id="markdown-content"></div>
+    <script>
+        async function fetchRepoContents(path = '') {
+            const repo = "THORCollective/HEARTH";
+            const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+            const response = await fetch(url);
+            return await response.json();
+        }
 
-const RepoExplorer = () => {
-  const [currentPath, setCurrentPath] = useState('');
-  const [expandedFolders, setExpandedFolders] = useState({});
-  const [items, setItems] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [markdownContent, setMarkdownContent] = useState('');
-  const [loading, setLoading] = useState(true);
+        async function fetchMarkdown(url) {
+            const response = await fetch(url);
+            return await response.text();
+        }
 
-  useEffect(() => {
-    fetchRepoContents();
-  }, [currentPath]);
-
-  const fetchRepoContents = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`https://api.github.com/repos/THORCollective/HEARTH/contents/${currentPath}`);
-      const data = await response.json();
-      setItems(data);
-    } catch (error) {
-      console.error('Error fetching repo contents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMarkdown = async (url) => {
-    try {
-      const response = await fetch(url);
-      const text = await response.text();
-      setMarkdownContent(text);
-    } catch (error) {
-      console.error('Error fetching markdown:', error);
-    }
-  };
-
-  const toggleFolder = (path) => {
-    setExpandedFolders(prev => ({
-      ...prev,
-      [path]: !prev[path]
-    }));
-  };
-
-  const handleFileClick = async (item) => {
-    if (item.name.endsWith('.md')) {
-      setSelectedFile(item);
-      await fetchMarkdown(item.download_url);
-    }
-  };
-
-  const handleBack = () => {
-    setSelectedFile(null);
-    setMarkdownContent('');
-  };
-
-  const renderFileTree = (items) => {
-    return (
-      <div className="space-y-1">
-        {items.map((item) => (
-          <div key={item.path} className="pl-4">
-            {item.type === 'dir' ? (
-              <div>
-                <button
-                  onClick={() => toggleFolder(item.path)}
-                  className="flex items-center space-x-2 w-full hover:bg-gray-800 p-2 rounded-lg text-left"
-                >
-                  {expandedFolders[item.path] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  <FolderOpen size={16} className="text-yellow-500" />
-                  <span className="text-gray-200">{item.name}</span>
-                </button>
-                {expandedFolders[item.path] && (
-                  <div className="ml-4 border-l border-gray-700">
-                    {/* Recursively render sub-items */}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button
-                onClick={() => handleFileClick(item)}
-                className="flex items-center space-x-2 w-full hover:bg-gray-800 p-2 rounded-lg text-left ml-6"
-              >
-                <File size={16} className="text-blue-400" />
-                <span className="text-gray-300">{item.name}</span>
-                <ExternalLink size={12} className="ml-auto text-gray-500" />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-100">HEARTH Repository Explorer</h1>
-          <a 
-            href="https://github.com/THORCollective/HEARTH"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center space-x-2 text-gray-300 hover:text-gray-100"
-          >
-            <Github size={24} />
-            <span>View on GitHub</span>
-          </a>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="p-6 bg-gray-800 border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-100 mb-4">Repository Structure</h2>
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>
-              </div>
-            ) : (
-              renderFileTree(items)
-            )}
-          </Card>
-
-          <Card className="p-6 bg-gray-800 border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-100">
-                {selectedFile ? selectedFile.name : 'File Preview'}
-              </h2>
-              {selectedFile && (
-                <button
-                  onClick={handleBack}
-                  className="flex items-center space-x-2 text-gray-400 hover:text-gray-100"
-                >
-                  <ArrowLeft size={16} />
-                  <span>Back</span>
-                </button>
-              )}
-            </div>
-            <div className="prose prose-invert max-w-none">
-              {selectedFile ? (
-                <div dangerouslySetInnerHTML={{ __html: markdownContent }} />
-              ) : (
-                <div className="text-gray-400 text-center py-12">
-                  Select a file to view its contents
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default RepoExplorer;
+        async function renderFileTree(path = '', element = document.getElementById('file-tree')) {
+            const items = await fetchRepoContents(path);
+            element.innerHTML = '';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                if (item.type === 'dir') {
+                    li.innerHTML = `<span class="folder">📁 ${item.name}</span>`;
+                    const sublist = document.createElement('ul');
+                    sublist.style.paddingLeft = "20px";
+                    li.appendChild(sublist);
+                    li.querySelector('.folder').addEventListener('click', () => {
+                        if (sublist.innerHTML === '') {
+                            renderFileTree(item.path, sublist);
+                        } else {
+                            sublist.innerHTML = '';
+                        }
+                    });
+                } else if (item.name.endsWith('.md')) {
+                    li.innerHTML = `<span class="file">📄 ${item.name}</span>`;
+                    li.addEventListener('click', async () => {
+                        document.getElementById('file-tree').style.display = 'none';
+                        document.getElementById('markdown-content').style.display = 'block';
+                        document.getElementById('back-button').style.display = 'block';
+                        const markdown = await fetchMarkdown(item.download_url);
+                        document.getElementById('markdown-content').innerHTML = marked.parse(markdown);
+                    });
+                } else {
+                    li.innerHTML = `<a class="file" href="${item.html_url}" target="_blank">📄 ${item.name}</a>`;
+                }
+                element.appendChild(li);
+            });
+        }
+        
+        document.getElementById('back-button').addEventListener('click', () => {
+            document.getElementById('file-tree').style.display = 'block';
+            document.getElementById('markdown-content').style.display = 'none';
+            document.getElementById('back-button').style.display = 'none';
+        });
+        
+        renderFileTree();
+    </script>
+</body>
+</html>
