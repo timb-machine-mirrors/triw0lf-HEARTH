@@ -9,7 +9,7 @@ body {
 }
 
 header {
-    background-color: #121212;
+    background-color: #1e1e1e;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
@@ -34,7 +34,7 @@ main {
 .btn {
     display: inline-block;
     padding: 10px 20px;
-    background-color: #09CAFb; /* Cyan color */
+    background-color: #6a0dad; /* Purple color */
     color: white;
     text-decoration: none;
     border-radius: 5px;
@@ -65,6 +65,12 @@ a:hover {
 .features li {
     font-size: 1.1rem;
     margin: 10px 0;
+}
+
+footer {
+    background-color: #1e1e1e;
+    padding: 15px;
+    font-size: 0.9rem;
 }
 
 footer a {
