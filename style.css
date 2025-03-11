@@ -9,7 +9,7 @@ body {
 }
 
 header {
-    background-color: #1e1e1e;
+    background-color: #121212;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
@@ -43,7 +43,7 @@ main {
 }
 
 .btn:hover {
-    background-color: #5a0cab; /* Darker purple */
+    background-color: #09CAFb; /* Darker purple */
 }
 
 .features ul {
