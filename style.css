@@ -34,7 +34,7 @@ main {
 .btn {
     display: inline-block;
     padding: 10px 20px;
-    background-color: #09CAFb; /* Purple color */
+    background-color: #09CAFb; /* Cyan color */
     color: white;
     text-decoration: none;
     border-radius: 5px;
@@ -67,8 +67,11 @@ a:hover {
     margin: 10px 0;
 }
 
-footer {
-    background-color: #121212;
-    padding: 15px;
-    font-size: 0.9rem;
+footer a {
+    color: #ffffff; /* White for better contrast */
+    font-weight: bold;
+}
+
+footer a:hover {
+    color: #bbbbbb; /* Slightly dimmed white for hover effect */
 }
