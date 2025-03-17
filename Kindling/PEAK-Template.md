@@ -148,7 +148,31 @@ index=main sourcetype=linux:audit
 - **Observed Trends:**  
 - **Unexpected Findings:**  
 - **Noteworthy Patterns:**  
-- **Key Data Correlations:**  
+- **Key Data Correlations:**
+
+## K - Knowledge: Lessons Learned & Documentation
+
+### **Adjustments to Future Hunts**
+- **What worked well?**  
+- **What could be improved?**  
+- **Should this hunt be automated as a detection?**  
+- **Are there any follow-up hunts that should be conducted?**  
+- **What feedback should be shared with other teams (SOC, IR, Threat Intel, Detection Engineering, etc.)?**
+
+### **Sharing Knowledge & Documentation**
+*(Ensure insights from this hunt are shared with the broader security team to improve future hunts and detections.)*  
+
+- **Knowledge Base (KB) Articles**  
+  - [ ] Write an internal KB article summarizing findings and recommended detection improvements.  
+  - [ ] Document any new hunting methodologies developed.  
+
+- **Threat Hunt Readouts**  
+  - [ ] Schedule a readout with SOC, IR, and Threat Intel teams.  
+  - [ ] Present key findings and suggested improvements to detections.  
+
+- **Reports & External Sharing**  
+  - [ ] Publish findings in an internal hunt report.  
+  - [ ] Share relevant insights with stakeholders, vendors, or industry communities if applicable.  
 
 ### **References**
 - [Insert link to related documentation, reports, or sources]  
