@@ -8,7 +8,7 @@
 
 ---
 
-## ** PREPARE: Define the Hunt**
+## PREPARE: Define the Hunt
 
 | **Hunt Information**            | **Details** |
 |----------------------------------|-------------|
@@ -96,8 +96,7 @@ index=main sourcetype=linux:audit
 
 - **Examples:**  
   - Time-series charts to detect activity spikes  
-  - Process lineage graphs to visualize parent-child process relationships  
-  - Heatmaps of unusual user activity  
+  - Heatmaps of unusual application installs  
 
 ### Detection Logic
 *(How would this be turned into a detection rule? Thresholds, tuning considerations, etc.)*  
@@ -141,14 +140,6 @@ index=main sourcetype=linux:audit
 | [Describe finding] | [Insert Ticket Number] | [Brief description of the finding, such as suspicious activity, new detection idea, data gap, etc.] |
 | [Describe finding] | [Insert Ticket Number] | [Brief description of the finding] |
 | [Describe finding] | [Insert Ticket Number] | [Brief description of the finding] |
-
-## Outputs
-*(Summarize the outputs of the query: counts, trends, anomalies, correlations, or pivots.)*
-
-- **Observed Trends:**  
-- **Unexpected Findings:**  
-- **Noteworthy Patterns:**  
-- **Key Data Correlations:**
 
 ## K - Knowledge: Lessons Learned & Documentation
 
