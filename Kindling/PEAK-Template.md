@@ -72,9 +72,9 @@
 *(Document queries for Splunk, Sigma, KQL, or another query language to execute the hunt. Capture any adjustments made during analysis and iterate on findings.)*
 
 #### Initial Query
-index=main sourcetype=linux:audit  
+`index=main sourcetype=linux:audit  
 | search "sudo" OR "pkexec"  
-| stats count by user, command, parent_process  
+| stats count by user, command, parent_process `
 
 - **Notes:**  
   - Did this query return expected results?  
@@ -82,10 +82,10 @@ index=main sourcetype=linux:audit
   - How did you refine the query based on findings?  
 
 #### Refined Query (if applicable)
-index=main sourcetype=linux:audit  
+`index=main sourcetype=linux:audit  
 | search "sudo" OR "pkexec"  
 | stats count by user, command, parent_process, _time  
-| sort - _time  
+| sort - _time `
 
 - **Rationale for Refinement:**  
   - Added `_time` for better event sequencing.  
