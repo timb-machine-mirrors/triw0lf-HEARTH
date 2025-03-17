@@ -9,20 +9,16 @@
 ---
 
 ## ** PREPARE: Define the Hunt**
-### **Hypothesis**
-> *What are you hunting for and why?*  
-> *Example: Attackers are escalating privileges using unusual `sudo` or `pkexec` commands on Linux hosts in your environment.*
 
-### **Threat Intel & Research**
-- **MITRE ATT&CK Techniques:**  
-  - `Txxxx - Technique Name`
-- **Related Reports, Blogs, or Threat Intel Sources:**  
-  - `[Link]`
-  - `[Reference]`
-- **Historical Prevalence & Relevance:**  
-  - *(Has this been observed before in your environment? Are there any detections/mitigations for this activity already in place?)*
- 
-## Scoping with the ABLE Methodology
+| **Hunt Information**            | **Details** |
+|----------------------------------|-------------|
+| **Hypothesis**                  | [What are you hunting for and why?] |
+| **Threat Hunter Name**          | [Name of the threat hunter] |
+| **Date**                        | [Date of hunt] |
+| **Requestor**                   | [Person or team requesting the hunt] |
+| **Timeframe for hunt**          | [Expected duration for the hunt] |
+
+## Scoping with the ABLE Methodology (Use the table below)
 
 - **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior.  
   - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)
@@ -44,6 +40,30 @@
   - *Example: CloudTrail logs revealed unauthorized API calls for privilege escalation in AWS.*  
     - **Key Fields:** `event_name`, `user_identity.arn`, `source_ip_address`, `request_parameters`, `response_elements`  
 
+## ABLE Table:
+| **Adversary** | **Behavior** | **Location** | **Examples** |
+|---------------|--------------|--------------|--------------|
+| [Insert adversary] | [Insert observed or expected behavior] | [Where this behavior is expected or found] | [Examples of similar behaviors/incidents] |
+
+## Related Tickets (detection coverage, previous incidents, etc.)
+
+| **Role**                        | **Ticket and Other Details** |
+|----------------------------------|------------------------------|
+| **SOC/IR**                      | [Insert related ticket or incident details] |
+| **Threat Intel (TI)**            | [Insert related ticket or incident details] |
+| **Detection Engineering (DE)**   | [Insert related ticket or incident details] |
+| **Red Team / Pen Testing**       | [Insert related ticket or incident details] |
+| **Other**                        | [Insert related ticket or incident details] |
+
+## **Threat Intel & Research**
+- **MITRE ATT&CK Techniques:**  
+  - `Txxxx - Technique Name`
+- **Related Reports, Blogs, or Threat Intel Sources:**  
+  - `[Link]`
+  - `[Reference]`
+- **Historical Prevalence & Relevance:**  
+  - *(Has this been observed before in your environment? Are there any detections/mitigations for this activity already in place?)*
+ 
 ---
 
 ## EXECUTE: Run the Hunt
@@ -90,34 +110,37 @@ index=main sourcetype=linux:audit
   - Did certain legitimate activities cause false positives?  
   - How can you tune the rule to focus on real threats?  
 
-- **Final Detection Rule (if applicable):**  
-index=main sourcetype=linux:audit  
-| search "sudo" OR "pkexec"  
-| stats count by user, command, parent_process  
-| where count > 3  # Adjusted threshold based on observed normal behavior  
-
 ### Capturing Your Analysis & Iteration
 - **Summarize insights gained from each query modification and visualization.**  
 - **Reiterate key findings:**  
-  - Did this query lead to a confirmed detection, a false positive, or a hypothesis for further hunting?  
+  - Did this query lead to any findings, false positives, or hypotheses for further hunting?  
   - If this hunt were repeated, what changes should be made?  
   - Does this hunt generate ideas for additional hunts?  
 
-- **Document next steps for refining detection rules or automation.**  
+- **Document the next steps for refining queries for detections and other outputs.**  
 
 ---
 
 ## ACT: Findings & Response
 
-### Findings
-**Observed Activity:**  
+### Hunt Review Template
+
+### **Hypothesis / Topic**
+*(Restate the hypothesis and topic of the investigation.)*
+
+### **Executive Summary**
+**Key Points:**  
+- 3-5 sentences summarizing the investigation.  
+- Indicate whether the hypothesis was proved or disproved.  
+- Summarize the main findings (e.g., "We found..., we did not find..., we did not find... but we did find...").  
+
+### **Findings**
 *(Summarize key results, including any unusual activity.)*
-
-**False Positives:**  
-*(What normal behavior did you see that could trigger similar alerts? How can this be tuned?)*
-
-### Next Steps & Mitigation  
-*(What actions should defenders take if malicious activity is confirmed?)*
+| **Finding** | **Ticket Number and Link** | **Description** |
+|------------|----------------------------|-----------------|
+| [Describe finding] | [Insert Ticket Number] | [Brief description of the finding, such as suspicious activity, new detection idea, data gap, etc.] |
+| [Describe finding] | [Insert Ticket Number] | [Brief description of the finding] |
+| [Describe finding] | [Insert Ticket Number] | [Brief description of the finding] |
 
 ## Outputs
 *(Summarize the outputs of the query: counts, trends, anomalies, correlations, or pivots.)*
@@ -127,27 +150,6 @@ index=main sourcetype=linux:audit
 - **Noteworthy Patterns:**  
 - **Key Data Correlations:**  
 
-#### **Mitigation Recommendations:**  
-- [ ] Disable vulnerable service  
-- [ ] Investigate impacted hosts  
-
-#### **Detection Engineering:**  
-- [ ] Refine search logic, add alerts  
-
-#### **Response Playbooks:**  
-- [ ] Reference relevant IR playbooks  
-
----
-
-## KNOWLEDGE: Lessons Learned & Documentation
-
-### Adjustments to Future Hunts
-- **What worked well?**  
-- **What could be improved?**  
-- **Should this hunt be automated as a detection?**  
-
-### References & Documentation  
-*(Links to related hunts, detections, or threat intelligence reports.)*  
-
-- [Link]  
-- [Reference]  
+### **References**
+- [Insert link to related documentation, reports, or sources]  
+- [Insert link to any external references or articles]  
