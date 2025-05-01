@@ -52,7 +52,7 @@ Once you have the directional sequence and your coin’s number, generate your c
 Format: `SNWE-XXX` → e.g., `2042-042`
 
 📧 Send your answer to: **hearth@thorcollective.com**  
-Subject line: `HEARTH Coin Challenge – [Your Code]`
+Subject line: `THOR Coin Challenge – [Your Code]`
 
 Be sure to include:
 - Your code  
