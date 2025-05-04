@@ -23,7 +23,7 @@
 - **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior.  
   - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)
 
-- **B - Behaviors**: Describe the actions observed, including tactics, techniques, and procedures (TTPs).  
+- **B - Behavior**: Describe the actions observed, including tactics, techniques, and procedures (TTPs).  
   - *Example: The actor attempted credential dumping using `mimikatz.exe` (T1003).*
 
 - **L - Location**: Specify where the activity occurred, such as an endpoint, network segment, or cloud environment.  
