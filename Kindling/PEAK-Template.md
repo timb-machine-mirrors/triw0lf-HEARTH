@@ -46,7 +46,7 @@
 | **Actor**   | The threat actor involved or suspected                      | [Insert threat actor (if applicable)]                         |
 | **Behavior**    | Observed or expected actions, TTPs, or suspicious patterns  | [Insert behavior]                          |
 | **Location**    | Where the behavior occurred (endpoint, network, cloud, etc.)| [Where this behavior is expected or found] |
-| **Evidence**    | What the behavior looks like in the events.            | [Evidence of behavior]  |
+| **Evidence**    | What the behavior looks like in the events            | [Evidence of behavior]  |
 
 ## Related Tickets (detection coverage, previous incidents, etc.)
 
