@@ -41,9 +41,12 @@
     - **Key Fields:** `event_name`, `user_identity.arn`, `source_ip_address`, `request_parameters`, `response_elements`  
 
 ## ABLE Table:
-| **Adversary** | **Behavior** | **Location** | **Examples** |
-|---------------|--------------|--------------|--------------|
-| [Insert adversary] | [Insert observed or expected behavior] | [Where this behavior is expected or found] | [Examples of similar behaviors/incidents] |
+| **Field**       | **Description**                                             | **Example**                                |
+|-----------------|-------------------------------------------------------------|--------------------------------------------|
+| **Adversary**   | The threat actor involved or suspected                      | [Insert adversary]                         |
+| **Behavior**    | Observed or expected actions, TTPs, or suspicious patterns  | [Insert behavior]                          |
+| **Location**    | Where the behavior occurred (endpoint, network, cloud, etc.)| [Where this behavior is expected or found] |
+| **Examples**    | Similar past incidents or known attack patterns             | [Examples of similar behaviors/incidents]  |
 
 ## Related Tickets (detection coverage, previous incidents, etc.)
 
