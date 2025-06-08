@@ -1,3 +1,9 @@
+*This template provides a structured and consistent way to document threat hunting activities using the PEAK Framework (Prepare, Execute, Act with Knowledge). It guides threat hunters through defining clear hypotheses, scoping the hunt precisely using the ABLE methodology, executing targeted queries, and documenting findings to ensure thorough and actionable results. Replace all placeholders (`[ ]`) with specific details relevant to your hunt scenario.*
+
+Want more info? Check out the post here - https://dispatch.thorcollective.com/p/the-peak-threat-hunting-template
+
+---
+
 # Threat Hunting Report - PEAK Framework
 
 ## Hunt ID: `H/B/M-XXXX`
