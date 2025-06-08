@@ -18,7 +18,7 @@
 | **Requestor**                   | [Person or team requesting the hunt] |
 | **Timeframe for hunt**          | [Expected duration for the hunt] |
 
-## Scoping with the ABLE Methodology (Use the table below)
+## Scoping with the ABLE Methodology
 
 Clearly define your hunt scope using the ABLE framework. Replace all placeholders (`[ ]`) with relevant details for your scenario.
 
@@ -29,7 +29,7 @@ Clearly define your hunt scope using the ABLE framework. Replace all placeholder
 | **Location**| Specify where the activity occurred, such as an endpoint, network segment, or cloud environment.                                                                                                                                 | `[Location]`            |
 | **Evidence**| Clearly list logs, artifacts, or telemetry supporting your hypothesis. For each source, provide critical fields required to validate the behavior, and include specific examples of observed or known malicious activity to illustrate expected findings. | `- Source: [Log Source]`<br>`- Key Fields: [Critical Fields]`<br>`- Example: [Expected Example of Malicious Activity]`<br><br>`- Source: [Additional Source]`<br>`- Key Fields: [Critical Fields]`<br>`- Example: [Expected Example of Malicious Activity]` |
 
-**Example ABLE Inputs:**
+**Example ABLE Inputs**
 
 | **Field**   | **Example Input**                                                                                                                                             |
 |-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
