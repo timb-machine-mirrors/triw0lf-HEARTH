@@ -20,32 +20,23 @@
 
 ## Scoping with the ABLE Methodology (Use the table below)
 
-- **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior, if applicable. This step is optional because hunts aren’t always tied to a specific actor. You may be investigating techniques used across multiple adversaries or looking for suspicious activity regardless of attribution. Focus on the what and how before the who, unless actor context adds meaningful value to the hunt.  
-  - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)*
+Clearly define your hunt scope using the ABLE framework. Replace all placeholders (`[ ]`) with relevant details for your scenario.
 
-- **B - Behavior**: Describe the actions observed, including tactics, techniques, and procedures (TTPs).  
-  - *Example: Credential dumping using `mimikatz.exe` (T1003).*
+| **Field**   | **Description**                                                                                                                                                                                                                                                                             | **Your Input**                   |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| **Actor**   | *(Optional)* Identify the threat actor involved with the behavior, if applicable. This step is optional because hunts aren’t always tied to a specific actor. You may be investigating techniques used across multiple adversaries or looking for suspicious activity regardless of attribution. Focus on the what and how before the who, unless actor context adds meaningful value to the hunt.  | `[Threat Actor or N/A]`          |
+| **Behavior**| Describe the actions observed or expected, including tactics, techniques, and procedures (TTPs). Clearly specify methods or tools involved.                                                                                                                                                 | `[Describe observed or expected behavior]` |
+| **Location**| Specify where the activity occurred, such as an endpoint, network segment, or cloud environment.                                                                                                                                 | `[Location]`            |
+| **Evidence**| Clearly list logs, artifacts, or telemetry supporting your hypothesis. For each source, provide critical fields required to validate the behavior, and include specific examples of observed or known malicious activity to illustrate expected findings. | `- Source: [Log Source]`<br>`- Key Fields: [Critical Fields]`<br>`- Example: [Expected Example of Malicious Activity]`<br><br>`- Source: [Additional Source]`<br>`- Key Fields: [Critical Fields]`<br>`- Example: [Expected Example of Malicious Activity]` |
 
-- **L - Location**: Specify where the activity occurred, such as an endpoint, network segment, or cloud environment.  
-  - *Example: AWS Cloud environment, PCI-scoped servers*
+**Example ABLE Inputs:**
 
-- **E - Evidence**: List supporting logs, artifacts, and forensic data used for validation.  
-  - *Example: Windows Event Log ID 4625 (failed login) and 4624 (successful login) correlated with VPN logs.*  
-    - **Key Fields:** `user`, `source_ip`, `destination_ip`, `event_id`, `timestamp`  
-  - *Example: Zeek logs captured suspicious DNS requests to `maliciousdomain.com` followed by outbound C2 traffic.*  
-    - **Key Fields:** `query`, `query_type`, `response_code`, `client_ip`, `server_ip`  
-  - *Example: Sysmon Event ID 1 (process creation) showed execution of `rundll32.exe` loading a suspicious DLL.*  
-    - **Key Fields:** `process_name`, `command_line`, `parent_process`, `hash`, `user`  
-  - *Example: CloudTrail logs revealed unauthorized API calls for privilege escalation in AWS.*  
-    - **Key Fields:** `event_name`, `user_identity.arn`, `source_ip_address`, `request_parameters`, `response_elements`  
-
-## ABLE Table:
-| **Field**       | **Description**                                             | **Example**                                |
-|-----------------|-------------------------------------------------------------|--------------------------------------------|
-| **Actor**   | [Insert threat actor (if applicable)]                         |
-| **Behavior**    | [Insert behavior]                          |
-| **Location**    | [Where this behavior is expected or found] |
-| **Evidence**    | [Evidence of behavior]  |
+| **Field**   | **Example Input**                                                                                                                                             |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Actor**   | `APT29 (Cozy Bear)`                                                                                                                                            |
+| **Behavior**| `Credential dumping via mimikatz.exe (T1003)`                                                                                                                 |
+| **Location**| `Corporate Windows Servers`                                                                                                                                   |
+| **Evidence**| `- Source: Sysmon Logs (Event ID 1 - Process Creation)`<br>`- Key Fields: process_name, command_line, parent_process, user, hash`<br>`- Example: Execution of mimikatz.exe with command line arguments such as "privilege::debug sekurlsa::logonpasswords"`<br><br>`- Source: Windows Security Event Logs (Event IDs 4624, 4625)`<br>`- Key Fields: user, source_ip, destination_ip, event_id, timestamp`<br>`- Example: Successful logon followed by immediate high-privilege process launches consistent with credential extraction attempts` |
 
 ## Related Tickets (detection coverage, previous incidents, etc.)
 
