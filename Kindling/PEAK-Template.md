@@ -21,14 +21,13 @@
 ## Scoping with the ABLE Methodology (Use the table below)
 
 - **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior, if applicable. This step is optional because hunts aren’t always tied to a specific actor. You may be investigating techniques used across multiple adversaries or looking for suspicious activity regardless of attribution. Focus on the what and how before the who, unless actor context adds meaningful value to the hunt.  
-  - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)
+  - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)*
 
 - **B - Behavior**: Describe the actions observed, including tactics, techniques, and procedures (TTPs).  
-  - *Example: The actor attempted credential dumping using `mimikatz.exe` (T1003).*
+  - *Example: Credential dumping using `mimikatz.exe` (T1003).*
 
 - **L - Location**: Specify where the activity occurred, such as an endpoint, network segment, or cloud environment.  
-  - *Example: The behavior was detected on `WIN-DC01`, a domain controller within the internal network.*
-  - *Example: The attacker leveraged AWS IAM roles to escalate privileges in the cloud environment.*
+  - *Example: AWS Cloud environment, PCI-scoped servers*
 
 - **E - Evidence**: List supporting logs, artifacts, and forensic data used for validation.  
   - *Example: Windows Event Log ID 4625 (failed login) and 4624 (successful login) correlated with VPN logs.*  
@@ -59,7 +58,8 @@
 | **Other**                        | [Insert related ticket] |
 
 ## **Threat Intel & Research**
-- **MITRE ATT&CK Techniques:**  
+- **MITRE ATT&CK Techniques:**
+  - `TAxxxx - Tactic Name` 
   - `Txxxx - Technique Name`
 - **Related Reports, Blogs, or Threat Intel Sources:**  
   - `[Link]`
@@ -93,7 +93,7 @@
   - Applied `sort` to identify patterns in privilege escalation attempts.  
 
 ### Visualization or Analytics
-*(Describe any dashboards, anomaly detection methods, or visualizations used. Capture observations and note whether visualizations revealed additional insights.)*  
+*(Describe any dashboards, anomaly detection methods, or visualizations used. Capture observations and note whether visualizations revealed additional insights. **Add screenshots!**)*  
 
 - **Examples:**  
   - Time-series charts to detect activity spikes  
@@ -155,8 +155,11 @@
 *(Ensure insights from this hunt are shared with the broader security team to improve future hunts and detections.)*  
 
 - **Knowledge Base (KB) Articles**  
-  - [ ] Write an internal KB article summarizing findings and recommended detection improvements.  
-  - [ ] Document any new hunting methodologies developed.  
+  - [ ] Write an internal KB article that captures:
+    - [ ] The hunt's objective, scope, and key findings
+    - [ ] Any detection logic or rule improvements
+    - [ ] Lessons learned that are relevant for future hunts or incident response
+  - [ ] Document newly uncovered insights or patterns that could benefit SOC, IR, or Detection Engineering teams, especially anything that could inform future detections, playbooks, or tuning decisions.
 
 - **Threat Hunt Readouts**  
   - [ ] Schedule a readout with SOC, IR, and Threat Intel teams.  
