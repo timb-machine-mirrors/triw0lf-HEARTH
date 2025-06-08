@@ -20,7 +20,7 @@
 
 ## Scoping with the ABLE Methodology (Use the table below)
 
-- **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior.  
+- **A - Actor**: (OPTIONAL) Identify the threat actor involved with the behavior, if applicable. This step is optional because hunts aren’t always tied to a specific actor. You may be investigating techniques used across multiple adversaries or looking for suspicious activity regardless of attribution. Focus on the what and how before the who, unless actor context adds meaningful value to the hunt.  
   - *Example: APT28 (Fancy Bear), APT29 (Cozy Bear)
 
 - **B - Behavior**: Describe the actions observed, including tactics, techniques, and procedures (TTPs).  
@@ -53,10 +53,10 @@
 | **Role**                        | **Ticket and Other Details** |
 |----------------------------------|------------------------------|
 | **SOC/IR**                      | [Insert related ticket or incident details] |
-| **Threat Intel (TI)**            | [Insert related ticket or incident details] |
-| **Detection Engineering (DE)**   | [Insert related ticket or incident details] |
-| **Red Team / Pen Testing**       | [Insert related ticket or incident details] |
-| **Other**                        | [Insert related ticket or incident details] |
+| **Threat Intel (TI)**            | [Insert related ticket] |
+| **Detection Engineering (DE)**   | [Insert related ticket] |
+| **Red Team / Pen Testing**       | [Insert related ticket] |
+| **Other**                        | [Insert related ticket] |
 
 ## **Threat Intel & Research**
 - **MITRE ATT&CK Techniques:**  
