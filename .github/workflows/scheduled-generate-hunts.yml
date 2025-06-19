@@ -2,6 +2,7 @@ name: Scheduled HEARTH Draft Generation
 
 # Runs at 16:00 UTC every day (that’s 9 AM America/Phoenix time)
 on:
+  workflow_dispatch:    # <— allows manual “Run workflow” in the UI
   schedule:
     - cron: '0 * * * *'
 
