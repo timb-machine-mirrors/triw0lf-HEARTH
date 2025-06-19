@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
+from PyPDF2 import PdfReader
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -158,10 +159,33 @@ def generate_hunt(cti_text, hunt_id, out_path):
     except Exception as e:
         print(f"❌ Error processing {hunt_id}: {str(e)}")
 
+def read_file_content(file_path):
+    """Read content from either PDF or text file."""
+    if file_path.suffix.lower() == '.pdf':
+        try:
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            return text.strip()
+        except Exception as e:
+            print(f"Error reading PDF {file_path}: {str(e)}")
+            return None
+    else:
+        try:
+            return file_path.read_text()
+        except Exception as e:
+            print(f"Error reading file {file_path}: {str(e)}")
+            return None
+
 if __name__ == "__main__":
-    for txt in CTI_INPUT_DIR.glob("*.txt"):
-        content = txt.read_text()
-        hunt_id = f"H-2025-{HUNT_COUNTER:03d}"  # Format: H-2025-001, H-2025-002, etc.
-        HUNT_COUNTER += 1
-        out_md  = OUTPUT_DIR / f"{hunt_id}.md"
-        generate_hunt(content, hunt_id, out_md)
+    # Process both .txt and .pdf files
+    for file_path in CTI_INPUT_DIR.glob("*.[tp][dx][tf]"):  # Matches .txt and .pdf
+        content = read_file_content(file_path)
+        if content:
+            hunt_id = f"H-2025-{HUNT_COUNTER:03d}"  # Format: H-2025-001, H-2025-002, etc.
+            HUNT_COUNTER += 1
+            out_md = OUTPUT_DIR / f"{hunt_id}.md"
+            generate_hunt(content, hunt_id, out_md)
+        else:
+            print(f"❌ Skipping {file_path} due to reading errors")
