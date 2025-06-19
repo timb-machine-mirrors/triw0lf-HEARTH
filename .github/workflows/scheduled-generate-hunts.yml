@@ -25,13 +25,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openai python-dotenv
+          pip install openai python-dotenv PyPDF2
 
       - name: Run HEARTH draft generator
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python scripts/generate_from_cti_dir.py
+          python scripts/generate_from_cti.py
 
       - name: Create draft branch
         run: |
