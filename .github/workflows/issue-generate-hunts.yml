@@ -1,60 +1,56 @@
-name: "Generate HEARTH Draft from Issue"
+name: "Issue-Driven HEARTH Draft Generation"
 
 on:
   issues:
     types: [labeled]
-  workflow_dispatch:
-    inputs:
-      issue_number:
-        description: 'The number of the issue to process for draft generation.'
-        required: true
-        type: 'number'
+  issue_comment:
+    types: [created]
 
 jobs:
-  build-and-pr:
-    # Run if the 'intel-submission' label is added, or if triggered manually.
-    if: (github.event_name == 'issues' && github.event.label.name == 'intel-submission') || github.event_name == 'workflow_dispatch'
+  # This job runs when an issue is labeled, prompting the user to add their file.
+  request-file:
+    # We only want this to run when the 'intel-submission' label is first added.
+    if: github.event_name == 'issues' && github.event.label.name == 'intel-submission'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: "Post a comment to request the CTI file"
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ✅ Thank you for your submission, @${{ github.event.issue.user.login }}!
+
+            Please attach your CTI file (e.g., a PDF or .txt file) in a new comment below to begin the automated drafting process.
+          reactions: '+1'
+
+  # This job runs on every new comment, but only proceeds if it finds an attachment.
+  process-file:
+    # We only want this to run on comments on issues that have the right label.
+    if: github.event_name == 'issue_comment' && contains(github.event.issue.labels.*.name, 'intel-submission')
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       issues: write
-
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
 
-      - name: "Get Issue Context"
-        id: issue_context
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          result-encoding: json
-          script: |
-            let issue_number = 0;
-            if (context.eventName === 'workflow_dispatch') {
-              issue_number = ${{ github.event.inputs.issue_number }};
-            } else {
-              issue_number = context.issue.number;
-            }
-            const response = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue_number,
-            });
-            return {
-              body: response.data.body,
-              user: response.data.user.login,
-              number: issue_number
-            }
-
-      - name: "Download attached CTI file"
+      - name: "Download CTI file from comment"
         id: download_attachment
         uses: peter-evans/download-issue-attachments@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ fromJson(steps.issue_context.outputs.result).number }}
+          comment-id: ${{ github.event.comment.id }}
           path: ./.hearth/intel-drops/
+
+      - name: "Check if a file was downloaded"
+        if: steps.download_attachment.outputs.any_downloaded == 'false'
+        run: |
+          echo "No file was attached to this comment. Skipping."
+          exit 0
 
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
@@ -64,16 +60,7 @@ jobs:
       - name: "Install dependencies"
         run: |
           python -m pip install --upgrade pip
-          pip install openai python-dotenv PyPDF2 requests
-
-      - name: "Parse issue for pasted text or link (if no attachment)"
-        if: steps.download_attachment.outputs.any_downloaded == 'false'
-        id: get_cti
-        env:
-          ISSUE_BODY: ${{ fromJson(steps.issue_context.outputs.result).body }}
-          ISSUE_NUMBER: ${{ fromJson(steps.issue_context.outputs.result).number }}
-        run: |
-          python scripts/process_issue_body.py
+          pip install openai python-dotenv PyPDF2
 
       - name: "Run HEARTH draft generator"
         id: generate_draft
@@ -87,32 +74,30 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "feat(hunt): New hunt draft from issue #${{ fromJson(steps.issue_context.outputs.result).number }}"
+          commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
           committer: "hearthbot <hearthbot@users.noreply.github.com>"
-          author: "${{ fromJson(steps.issue_context.outputs.result).user }} <${{ fromJson(steps.issue_context.outputs.result).user }}@users.noreply.github.com>"
-          branch: "hearth/issue-${{ fromJson(steps.issue_context.outputs.result).number }}"
+          author: "${{ github.event.comment.user.login }} <${{ github.event.comment.user.login }}@users.noreply.github.com>"
+          branch: "hearth/issue-${{ github.event.issue.number }}-${{ github.event.comment.id }}"
           delete-branch: true
-          title: "🔥 Hunt Draft from Issue #${{ fromJson(steps.issue_context.outputs.result).number }}"
+          title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
           body: |
-            This PR was automatically generated from issue #${{ fromJson(steps.issue_context.outputs.result).number }}.
+            This PR was automatically generated from a file attached to a comment in issue #${{ github.event.issue.number }}.
             
-            - **Submitter**: @${{ fromJson(steps.issue_context.outputs.result).user }}
-            - **Source Issue**: #${{ fromJson(steps.issue_context.outputs.result).number }}
+            - **Submitter**: @${{ github.event.comment.user.login }}
+            - **Source Issue**: #${{ github.event.issue.number }}
             
             Please review the generated hunt below.
             
-            Closes #${{ fromJson(steps.issue_context.outputs.result).number }}
+            Closes #${{ github.event.issue.number }}
           labels: "needs-review, automated-draft"
-          assignees: "${{ fromJson(steps.issue_context.outputs.result).user }}"
+          assignees: "${{ github.event.comment.user.login }}"
 
       - name: "Comment on issue with PR link"
         if: steps.create_pr.outputs.pull-request-number
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ fromJson(steps.issue_context.outputs.result).number }}
+          issue-number: ${{ github.event.issue.number }}
           body: |
-            ✅ Thank you for your submission, @${{ fromJson(steps.issue_context.outputs.result).user }}!
-            
-            Your CTI has been processed and a draft pull request has been created.
+            📄 Your file has been processed and a draft pull request has been created. Thank you!
             
             🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 

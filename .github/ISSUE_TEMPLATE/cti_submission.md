@@ -1,22 +1,12 @@
 ---
-name: "🔥 HEARTH CTI Submission"
-about: Submit a piece of Cyber Threat Intelligence (CTI) to be processed into a HEARTH hunt.
+name: "🔥 Submit CTI for Automated Hunt Generation"
+about: Start the automated process for generating a new HEARTH hunt from a CTI source.
 title: "CTI Submission: [Threat Actor, Malware, or Report Name]"
 labels: ["intel-submission", "needs-triage"]
 ---
 
-### Source (if any)
-<!-- Provide a URL to the original report or article. -->
+### CTI Submission
 
+Please confirm the title above is descriptive.
 
-### Pasted CTI
-<!-- 
-If the CTI is text-based, paste the content below.
-If you are attaching a file, you can simply type "See attached file" here. 
--->
-
-
----
-<!-- 
-To attach a file (PDF, TXT, etc.), use the bar below to drag & drop or select a file from your computer.
---> 
+Once you submit this issue, a bot will comment to request the CTI file as an attachment. This will begin the automated drafting process.
