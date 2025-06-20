@@ -34,14 +34,14 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          python HEARTH/scripts/process_issue_body.py
+          python scripts/process_issue_body.py
 
       - name: "Run HEARTH draft generator"
         id: generate_draft
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python HEARTH/scripts/generate_from_cti.py
+          python scripts/generate_from_cti.py
 
       - name: "Create Pull Request"
         id: create_pr

@@ -5,7 +5,7 @@ import requests
 from pathlib import Path
 
 # --- Constants ---
-CTI_INPUT_DIR = Path("HEARTH/.hearth/intel-drops/")
+CTI_INPUT_DIR = Path(".hearth/intel-drops/")
 CTI_INPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # --- Functions ---
