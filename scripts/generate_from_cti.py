@@ -87,7 +87,7 @@ Instructions:
    - The target must specify exact systems/services/data
 4. Use one of: Threat actors | Adversaries | Attackers
 
-IMPORTANT: Your output markdown MUST start with "# {hunt_id}" - do not include any technique lists or other content before this.
+IMPORTANT: Your output markdown MUST start with "# %%HUNT_ID%%" - do not include any technique lists or other content before this.
 
 Example transformation from broad to specific:
 TOO BROAD: "Adversaries are using PowerShell for execution"
@@ -95,12 +95,12 @@ SPECIFIC: "Adversaries are using PowerShell's Add-MpPreference cmdlet to disable
 
 Format the hunt EXACTLY as follows, starting with the hunt ID:
 
-# {hunt_id}
+# %%HUNT_ID%%
 [Your extremely specific hypothesis]
 
 | Hunt #       | Idea / Hypothesis                                                      | Tactic         | Notes                                      | Tags                           | Submitter                                   |
 |--------------|-------------------------------------------------------------------------|----------------|--------------------------------------------|--------------------------------|---------------------------------------------|
-| {hunt_id}    | [Same hypothesis]                                                      | [MITRE Tactic] | Based on ATT&CK technique [Txxxx], using… | #[tactic] #[technique] #[tag] | [hearth-auto-intel](https://github.com/THORCollective/HEARTH) |
+| %%HUNT_ID%%  | [Same hypothesis]                                                      | [MITRE Tactic] | Based on ATT&CK technique [Txxxx], using… | #[tactic] #[technique] #[tag] | [hearth-auto-intel](https://github.com/THORCollective/HEARTH) |
 
 ## Why
 - [Specific technical reason why this precise behavior matters to detect]
@@ -154,8 +154,8 @@ def generate_hunt(cti_text, hunt_id, out_path):
     """Generate a hunt hypothesis from CTI text."""
     try:
         summary = summarize_cti(cti_text)
-        # Generate hunt with single GPT-4 call
-        prompt = USER_TEMPLATE.format(cti_text=summary, hunt_id=hunt_id)
+        # Generate hunt with single GPT-4 call, using a placeholder for the hunt ID
+        prompt = USER_TEMPLATE.format(cti_text=summary)
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role":"system","content":SYSTEM_PROMPT},
@@ -165,9 +165,12 @@ def generate_hunt(cti_text, hunt_id, out_path):
         )
         content = response.choices[0].message.content.strip()
         
+        # Replace the placeholder with the actual hunt ID
+        final_content = content.replace("%%HUNT_ID%%", hunt_id)
+
         # Save the hunt
         with open(out_path, "w") as f:
-            f.write(content)
+            f.write(final_content)
         print(f"✅ {hunt_id} → {out_path}")
         return True
     except Exception as e:
