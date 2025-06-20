@@ -24,14 +24,6 @@ jobs:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
 
-      - name: "Download attached CTI file"
-        id: download_attachment
-        uses: peter-evans/download-issue-attachments@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.inputs.issue_number || github.event.issue.number }}
-          path: ./.hearth/intel-drops/
-
       - name: "Get Issue Context"
         id: issue_context
         uses: actions/github-script@v7
@@ -55,6 +47,14 @@ jobs:
               user: response.data.user.login,
               number: issue_number
             }
+
+      - name: "Download attached CTI file"
+        id: download_attachment
+        uses: peter-evans/download-issue-attachments@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ fromJson(steps.issue_context.outputs.result).number }}
+          path: ./.hearth/intel-drops/
 
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
