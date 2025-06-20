@@ -73,44 +73,29 @@ USER_TEMPLATE = """CTI REPORT:
 ---
 
 Instructions:
-1. Identify ALL MITRE ATT&CK techniques implied in the CTI (but do not list them in the output).
-2. Select ONE technique to focus on using these criteria in order:
-   a. Actionability: Which TTP leaves the clearest evidence in logs/telemetry?
-   b. Impact: Which TTP most directly enables adversary objectives?
-   c. Uniqueness: Which TTP is most distinctive of this specific threat?
-   d. Detection Gap: Which TTP is commonly missed by security tools?
-3. Write a hypothesis that is EXTREMELY specific:
-   - Must follow this exact pattern:
-     [Actor type] are [precise technical behavior] to [immediate tactical goal] on [specific target]
-   - The behavior must include exact technical details (commands, registry keys, file paths, etc.)
-   - The goal must be immediate and tactical (not strategic)
-   - The target must specify exact systems/services/data
-4. Use one of: Threat actors | Adversaries | Attackers
+1.  Read the CTI Report.
+2.  Select the single most actionable MITRE ATT&CK technique from the report.
+3.  Write a specific, narrow, and actionable hunt hypothesis based on that technique.
+4.  Write a "Why" section explaining the importance of the hunt.
+5.  Write a "References" section with a link to the chosen MITRE technique and the source CTI.
+6.  The output MUST be only the content for the hunt, starting with the hypothesis. DO NOT include a title or the metadata table.
 
-IMPORTANT: Your output markdown MUST start with "# %%HUNT_ID%%" - do not include any technique lists or other content before this.
+Your output should look like this:
 
-Example transformation from broad to specific:
-TOO BROAD: "Adversaries are using PowerShell for execution"
-SPECIFIC: "Adversaries are using PowerShell's Add-MpPreference cmdlet to disable real-time monitoring by adding exclusion paths to Windows Defender on domain-joined workstations"
-
-Format the hunt EXACTLY as follows, starting with the hunt ID:
-
-# %%HUNT_ID%%
 [Your extremely specific hypothesis]
 
 | Hunt #       | Idea / Hypothesis                                                      | Tactic         | Notes                                      | Tags                           | Submitter                                   |
 |--------------|-------------------------------------------------------------------------|----------------|--------------------------------------------|--------------------------------|---------------------------------------------|
-| %%HUNT_ID%%  | [Same hypothesis]                                                      | [MITRE Tactic] | Based on ATT&CK technique [Txxxx], using… | #[tactic] #[technique] #[tag] | [hearth-auto-intel](https://github.com/THORCollective/HEARTH) |
+| [Leave blank] | [Same hypothesis]                                                      | [MITRE Tactic] | Based on ATT&CK technique [Txxxx], using… | #[tactic] #[technique] #[tag] | [hearth-auto-intel](https://github.com/THORCollective/HEARTH) |
 
 ## Why
-- [Specific technical reason why this precise behavior matters to detect]
-- [Immediate tactical impact if this specific technique succeeds]
-- [How this specific implementation ties to larger campaigns]
-- [Technical details of why this technique was chosen over others mentioned in the CTI]
+- [Why this behavior is important to detect]
+- [Tactical impact of success]
+- [Links to larger campaigns]
 
 ## References
-- [Single MITRE ATT&CK technique link with technique number]
-- [Source CTI report link]
+- [MITRE ATT&CK link]
+- [Source CTI link]
 """
 
 def summarize_cti(text, max_length=6000):
@@ -150,11 +135,10 @@ def summarize_cti(text, max_length=6000):
         # Fallback: return truncated text with warning
         return f"WARNING: Summarization failed. Using truncated text:\n\n{text[:2000]}..."
 
-def generate_hunt(cti_text, hunt_id, out_path):
-    """Generate a hunt hypothesis from CTI text."""
+def generate_hunt_content(cti_text):
+    """Generate just the core content of a hunt from CTI text."""
     try:
         summary = summarize_cti(cti_text)
-        # Generate hunt with single GPT-4 call, using a placeholder for the hunt ID
         prompt = USER_TEMPLATE.format(cti_text=summary)
         response = client.chat.completions.create(
             model="gpt-4",
@@ -163,19 +147,10 @@ def generate_hunt(cti_text, hunt_id, out_path):
             temperature=0.2,
             max_tokens=800
         )
-        content = response.choices[0].message.content.strip()
-        
-        # Replace the placeholder with the actual hunt ID
-        final_content = content.replace("%%HUNT_ID%%", hunt_id)
-
-        # Save the hunt
-        with open(out_path, "w") as f:
-            f.write(final_content)
-        print(f"✅ {hunt_id} → {out_path}")
-        return True
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"❌ Error processing {hunt_id}: {str(e)}")
-        return False
+        print(f"❌ Error generating hunt content: {str(e)}")
+        return None
 
 def read_file_content(file_path):
     """Read content from either PDF or text file."""
@@ -203,20 +178,40 @@ if __name__ == "__main__":
     files_to_process = list(CTI_INPUT_DIR.glob("*.[tp][dx][tf]"))
 
     for i, file_path in enumerate(files_to_process):
-        content = read_file_content(file_path)
-        if content:
+        cti_content = read_file_content(file_path)
+        if cti_content:
             current_hunt_number = next_hunt_number + i
             hunt_id = f"H-2025-{current_hunt_number:03d}"
-            
-            out_md = OUTPUT_DIR / f"{hunt_id}.md"
-            success = generate_hunt(content, hunt_id, out_md)
+            out_md_path = OUTPUT_DIR / f"{hunt_id}.md"
 
-            if success:
+            # 1. Generate the core hunt content from the AI
+            hunt_body = generate_hunt_content(cti_content)
+
+            if hunt_body:
+                # 2. Extract the hypothesis (the first line)
+                hypothesis = hunt_body.split('\n', 1)[0]
+
+                # 3. Construct the full markdown file
+                final_content = f"# {hunt_id}\n"
+                final_content += hunt_body.replace(hypothesis, "").lstrip() # Add body without hypothesis
+                
+                # Insert hunt_id into the table part of the body
+                final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
+
+                # 4. Save the final file
                 try:
+                    with open(out_md_path, "w") as f:
+                        f.write(final_content)
+                    print(f"✅ {hunt_id} → {out_md_path}")
+                    
+                    # 5. Move the processed intel file
                     dest_path = PROCESSED_DIR / file_path.name
                     file_path.rename(dest_path)
                     print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
+
                 except Exception as e:
-                    print(f"❌ Could not move {file_path.name}: {e}")
+                    print(f"❌ Could not write file or move intel: {e}")
+            else:
+                print(f"❌ Failed to generate hunt content for {file_path.name}")
         else:
             print(f"❌ Skipping {file_path} due to reading errors")
