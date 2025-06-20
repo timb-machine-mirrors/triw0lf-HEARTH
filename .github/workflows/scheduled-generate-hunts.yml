@@ -34,28 +34,19 @@ jobs:
         run: |
           python scripts/generate_from_cti.py
 
-      - name: Create draft branch
-        run: |
-          BRANCH="scheduled-drafts-${{ github.run_number }}"
-          git config user.name "hearthbot"
-          git config user.email "hearthbot@users.noreply.github.com"
-          git checkout -b $BRANCH
-          git add .hearth/auto-drafts/*.md
-          git commit -m "chore: scheduled HEARTH draft run #${{ github.run_number }}"
-          git push --set-upstream origin $BRANCH
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Open Pull Request
+      - name: Create Pull Request with new HEARTH draft
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat: scheduled HEARTH draft run #${{ github.run_number }}"
+          committer: hearthbot <hearthbot@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           title: "HEARTH scheduled drafts — needs review (#${{ github.run_number }})"
           body: |
             🔄 This pull request contains scheduled HEARTH hunt drafts generated on ${{ github.event.schedule }}.
             
             Please review and merge when ready.
           base: main
-          head: ${{ steps.create-draft-branch.outputs.branch }}
+          branch: "scheduled-drafts-${{ github.run_number }}"
           labels: needs-review
           assignees: YOUR_GITHUB_USERNAME
