@@ -3,11 +3,17 @@ name: "Generate HEARTH Draft from Issue"
 on:
   issues:
     types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'The number of the issue to process for draft generation.'
+        required: true
+        type: 'number'
 
 jobs:
   build-and-pr:
-    # Only run on issues with the 'intel-submission' label
-    if: github.event.label.name == 'intel-submission'
+    # Run if the 'intel-submission' label is added, or if triggered manually.
+    if: (github.event_name == 'issues' && github.event.label.name == 'intel-submission') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,6 +23,30 @@ jobs:
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
+
+      - name: "Get Issue Context"
+        id: issue_context
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: json
+          script: |
+            let issue_number = 0;
+            if (context.eventName === 'workflow_dispatch') {
+              issue_number = ${{ github.event.inputs.issue_number }};
+            } else {
+              issue_number = context.issue.number;
+            }
+            const response = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue_number,
+            });
+            return {
+              body: response.data.body,
+              user: response.data.user.login,
+              number: issue_number
+            }
 
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
@@ -31,8 +61,8 @@ jobs:
       - name: "Parse issue and get CTI"
         id: get_cti
         env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ fromJson(steps.issue_context.outputs.result).body }}
+          ISSUE_NUMBER: ${{ fromJson(steps.issue_context.outputs.result).number }}
         run: |
           python scripts/process_issue_body.py
 
@@ -48,31 +78,31 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
+          commit-message: "feat(hunt): New hunt draft from issue #${{ fromJson(steps.issue_context.outputs.result).number }}"
           committer: "hearthbot <hearthbot@users.noreply.github.com>"
-          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
-          branch: "hearth/issue-${{ github.event.issue.number }}"
+          author: "${{ fromJson(steps.issue_context.outputs.result).user }} <${{ fromJson(steps.issue_context.outputs.result).user }}@users.noreply.github.com>"
+          branch: "hearth/issue-${{ fromJson(steps.issue_context.outputs.result).number }}"
           delete-branch: true
-          title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
+          title: "🔥 Hunt Draft from Issue #${{ fromJson(steps.issue_context.outputs.result).number }}"
           body: |
-            This PR was automatically generated from issue #${{ github.event.issue.number }}.
+            This PR was automatically generated from issue #${{ fromJson(steps.issue_context.outputs.result).number }}.
             
-            - **Submitter**: @${{ github.event.issue.user.login }}
-            - **Source Issue**: #${{ github.event.issue.number }}
+            - **Submitter**: @${{ fromJson(steps.issue_context.outputs.result).user }}
+            - **Source Issue**: #${{ fromJson(steps.issue_context.outputs.result).number }}
             
             Please review the generated hunt below.
             
-            Closes #${{ github.event.issue.number }}
+            Closes #${{ fromJson(steps.issue_context.outputs.result).number }}
           labels: "needs-review, automated-draft"
-          assignees: "${{ github.event.issue.user.login }}"
+          assignees: "${{ fromJson(steps.issue_context.outputs.result).user }}"
 
       - name: "Comment on issue with PR link"
         if: steps.create_pr.outputs.pull-request-number
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ fromJson(steps.issue_context.outputs.result).number }}
           body: |
-            ✅ Thank you for your submission, @${{ github.event.issue.user.login }}!
+            ✅ Thank you for your submission, @${{ fromJson(steps.issue_context.outputs.result).user }}!
             
             Your CTI has been processed and a draft pull request has been created.
             
