@@ -95,7 +95,6 @@ Your output should look like this:
 
 ## References
 - [MITRE ATT&CK link]
-- [Source CTI link]
 """
 
 def summarize_cti(text, max_length=6000):
@@ -199,11 +198,9 @@ if __name__ == "__main__":
                 # Insert hunt_id into the table part of the body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
 
-                # Insert the source CTI link as a proper markdown link
+                # Append the source CTI link to the References section
                 if cti_source_url and cti_source_url != "URL not provided":
-                    final_content = final_content.replace("- [Source CTI link]", f"- [Source CTI Report]({cti_source_url})")
-                else:
-                    final_content = final_content.replace("- [Source CTI link]", "- Source CTI link not provided")
+                    final_content += f"\n- [Source CTI Report]({cti_source_url})"
 
                 # 4. Save the final file
                 try:
