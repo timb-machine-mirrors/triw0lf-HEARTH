@@ -11,7 +11,9 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 CTI_INPUT_DIR = Path(".hearth/intel-drops/")
 OUTPUT_DIR    = Path(".hearth/auto-drafts/")
+PROCESSED_DIR = Path(".hearth/processed-intel-drops/")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 # Counter for hunt IDs
 HUNT_COUNTER = 1
@@ -156,8 +158,10 @@ def generate_hunt(cti_text, hunt_id, out_path):
         with open(out_path, "w") as f:
             f.write(content)
         print(f"✅ {hunt_id} → {out_path}")
+        return True
     except Exception as e:
         print(f"❌ Error processing {hunt_id}: {str(e)}")
+        return False
 
 def read_file_content(file_path):
     """Read content from either PDF or text file."""
@@ -186,6 +190,14 @@ if __name__ == "__main__":
             hunt_id = f"H-2025-{HUNT_COUNTER:03d}"  # Format: H-2025-001, H-2025-002, etc.
             HUNT_COUNTER += 1
             out_md = OUTPUT_DIR / f"{hunt_id}.md"
-            generate_hunt(content, hunt_id, out_md)
+            success = generate_hunt(content, hunt_id, out_md)
+
+            if success:
+                try:
+                    dest_path = PROCESSED_DIR / file_path.name
+                    file_path.rename(dest_path)
+                    print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
+                except Exception as e:
+                    print(f"❌ Could not move {file_path.name}: {e}")
         else:
             print(f"❌ Skipping {file_path} due to reading errors")
