@@ -4,7 +4,7 @@ name: Scheduled HEARTH Draft Generation
 on:
   workflow_dispatch:        # For manual runs
   schedule:
-    - cron: '0 * * * *'    # Daily at 16:00 UTC (9 AM Phoenix)
+    - cron: '0 16 * * *'    # Daily at 16:00 UTC (9 AM Phoenix)
 
 jobs:
   generate-and-pr:
