@@ -16,17 +16,50 @@ jobs:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
 
-      - name: "Extract CTI URL from issue"
-        id: extract_url
+      - name: "Parse Issue Body"
+        id: parse_issue
         run: |
-          url=$(echo "${{ github.event.issue.body }}" | grep -o 'https://[^)]*')
-          echo "url=$url" >> $GITHUB_OUTPUT
-        
-      - name: "Download CTI content"
-        id: download
+          body="${{ github.event.issue.body }}"
+          
+          # Extract file URL from markdown link like [text](URL)
+          file_url=$(echo "$body" | sed -n 's/.*(\(https:\/\/github.com\/.*\/files\/[0-9]*\/.*\)).*/\1/p' | head -n 1)
+          
+          # Extract source URL (assumes it's a raw link in the issue body)
+          source_url=$(echo "$body" | grep -o 'https://[^)]*' | grep -v 'github.com/.*/files/' | tail -n 1)
+
+          # Extract raw CTI text if no file is attached
+          raw_cti=""
+          if [ -z "$file_url" ]; then
+            raw_cti=$(echo "$body" | awk '/### CTI Content/,/### Link to Original Source/' | sed '1d;$d')
+          fi
+
+          echo "file_url=$file_url" >> $GITHUB_OUTPUT
+          echo "source_url=$source_url" >> $GITHUB_OUTPUT
+          echo "raw_cti<<EOF" >> $GITHUB_OUTPUT
+          echo "$raw_cti" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: "Prepare CTI file"
+        id: prepare_cti
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .hearth/intel-drops
-          wget -O .hearth/intel-drops/source_cti.txt "${{ steps.extract_url.outputs.url }}"
+          file_path=".hearth/intel-drops/source_cti"
+          
+          file_url="${{ steps.parse_issue.outputs.file_url }}"
+          raw_cti="${{ steps.parse_issue.outputs.raw_cti }}"
+
+          if [ -n "$file_url" ]; then
+            echo "Downloading CTI file from URL..."
+            curl -s -L -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" "$file_url" -o "$file_path"
+          elif [ -n "$raw_cti" ]; then
+            echo "Using raw CTI text from issue body..."
+            echo "$raw_cti" > "$file_path.txt"
+          else
+            echo "No CTI content found."
+            exit 1
+          fi
 
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
@@ -42,7 +75,7 @@ jobs:
         id: generate_draft
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CTI_SOURCE_URL: ${{ steps.extract_url.outputs.url }}
+          CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
         run: |
           python scripts/generate_from_cti.py
 
@@ -58,11 +91,11 @@ jobs:
           delete-branch: true
           title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
           body: |
-            This PR was automatically generated from a CTI link in issue #${{ github.event.issue.number }}.
+            This PR was automatically generated from CTI provided in issue #${{ github.event.issue.number }}.
             
             - **Submitter**: @${{ github.event.issue.user.login }}
             - **Source Issue**: #${{ github.event.issue.number }}
-            - **Source CTI**: ${{ steps.extract_url.outputs.url }}
+            - **Source CTI Link**: ${{ steps.parse_issue.outputs.source_url }}
             
             Please review the generated hunt below.
             
@@ -76,6 +109,6 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            📄 Your CTI link has been processed and a draft pull request has been created. Thank you!
+            📄 Your submission has been processed and a draft pull request has been created. Thank you!
             
             🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 
