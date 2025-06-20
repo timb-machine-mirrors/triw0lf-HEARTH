@@ -45,17 +45,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .hearth/intel-drops
-          file_path=".hearth/intel-drops/source_cti"
           
           file_url="${{ steps.parse_issue.outputs.file_url }}"
           raw_cti="${{ steps.parse_issue.outputs.raw_cti }}"
 
           if [ -n "$file_url" ]; then
             echo "Downloading CTI file from URL..."
-            curl -s -L -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" "$file_url" -o "$file_path"
+            # Preserve the original filename from the URL
+            filename=$(basename "$file_url")
+            curl -s -L -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" "$file_url" -o ".hearth/intel-drops/$filename"
           elif [ -n "$raw_cti" ]; then
             echo "Using raw CTI text from issue body..."
-            echo "$raw_cti" > "$file_path.txt"
+            echo "$raw_cti" > ".hearth/intel-drops/source_cti.txt"
           else
             echo "No CTI content found."
             exit 1
