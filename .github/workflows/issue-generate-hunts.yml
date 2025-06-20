@@ -40,7 +40,7 @@ jobs:
 
       - name: "Download CTI file from comment"
         id: download_attachment
-        uses: peter-evans/download-issue-attachments@v1
+        uses: peter-evans/download-issue-attachments@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-id: ${{ github.event.comment.id }}
