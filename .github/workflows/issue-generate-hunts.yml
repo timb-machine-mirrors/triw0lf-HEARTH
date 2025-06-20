@@ -47,23 +47,20 @@ jobs:
         run: |
           set -e
           mkdir -p $INTEL_DROP_PATH
-          urls=$(echo "$COMMENT_BODY" | grep -o 'https://github.com/.*')
+          # This regex correctly extracts the URL from a markdown link like [text](URL)
+          urls=$(echo "$COMMENT_BODY" | sed -n 's/.*(\(https:\/\/github.com\/user-attachments\/files\/[^)]*\)).*/\1/p')
+
           if [ -z "$urls" ]; then
             echo "No attachment URLs found in comment."
             echo "any_downloaded=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           for url in $urls; do
-            # The URL in the comment is the HTML page, not the raw asset.
-            # We need to get the real download URL.
-            # This is a bit of a hack, but it works for GitHub's structure.
-            asset_url=$(echo "$url" | sed 's|github.com|uploads.github.com|' | sed 's|/files/|/assets/|')
-            
-            # Use gh to securely download the asset
-            gh api "$asset_url" --header 'Accept: application/octet-stream' > "$INTEL_DROP_PATH/$(basename $url)"
-            
-            echo "Downloaded $(basename $url)"
+            filename=$(basename "$url")
+            # Use curl with authentication to download the private attachment
+            curl -s -L -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" "$url" -o "$INTEL_DROP_PATH/$filename"
+            echo "Downloaded $filename"
           done
           echo "any_downloaded=true" >> $GITHUB_OUTPUT
 
