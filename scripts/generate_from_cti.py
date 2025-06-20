@@ -199,8 +199,11 @@ if __name__ == "__main__":
                 # Insert hunt_id into the table part of the body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
 
-                # Insert the source CTI link
-                final_content = final_content.replace("- [Source CTI link]", f"- {cti_source_url}")
+                # Insert the source CTI link as a proper markdown link
+                if cti_source_url and cti_source_url != "URL not provided":
+                    final_content = final_content.replace("- [Source CTI link]", f"- [Source CTI Report]({cti_source_url})")
+                else:
+                    final_content = final_content.replace("- [Source CTI link]", "- Source CTI link not provided")
 
                 # 4. Save the final file
                 try:

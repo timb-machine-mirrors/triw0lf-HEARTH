@@ -24,8 +24,8 @@ jobs:
           # Extract file URL from markdown link like [text](URL)
           file_url=$(echo "$body" | sed -n 's/.*(\(https:\/\/github.com\/.*\/files\/[0-9]*\/.*\)).*/\1/p' | head -n 1)
           
-          # Extract source URL (assumes it's a raw link in the issue body)
-          source_url=$(echo "$body" | grep -o 'https://[^)]*' | grep -v 'github.com/.*/files/' | tail -n 1)
+          # Extract source URL from under the specific markdown heading
+          source_url=$(echo "$body" | awk -v RS='### Link to Original Source' 'END{print}' | xargs)
 
           # Extract raw CTI text if no file is attached
           raw_cti=""
