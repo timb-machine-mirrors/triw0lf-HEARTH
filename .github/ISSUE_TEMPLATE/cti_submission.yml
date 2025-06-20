@@ -6,14 +6,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for contributing to HEARTH! Please provide the CTI details below. 
-        You can either paste the raw text or provide a direct link to the report (e.g., a PDF link).
+        Thank you for contributing to HEARTH! Please provide the CTI details below.
+        **To attach a file (PDF, TXT, etc.), simply drag and drop it into the 'Pasted CTI' text box below.**
 
   - type: textarea
     id: cti-paste
     attributes:
-      label: "Pasted CTI"
-      description: "If the CTI is text-based, paste the full content here."
+      label: "Upload CTI File or Paste Text"
+      description: "Drag & drop a file here to upload it, or paste the raw CTI text directly."
       render: markdown
     validations:
       required: false
@@ -21,8 +21,8 @@ body:
   - type: input
     id: cti-link
     attributes:
-      label: "Link to CTI"
-      description: "If the CTI is in a file (e.g., PDF), provide a direct, public link to it."
+      label: "Or Provide a Public Link to CTI"
+      description: "If you cannot upload the file, you can provide a direct, public link to it (e.g., a PDF link)."
       placeholder: "https://example.com/report.pdf"
     validations:
       required: false
