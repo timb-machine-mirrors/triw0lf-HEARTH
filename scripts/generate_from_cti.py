@@ -10,13 +10,24 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 CTI_INPUT_DIR = Path(".hearth/intel-drops/")
-OUTPUT_DIR    = Path(".hearth/auto-drafts/")
+OUTPUT_DIR    = Path("Flames/")
 PROCESSED_DIR = Path(".hearth/processed-intel-drops/")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-# Counter for hunt IDs
-HUNT_COUNTER = 1
+def get_next_hunt_id():
+    """Scans the Flames/ directory to find the next available hunt ID."""
+    flames_dir = Path("Flames/")
+    flames_dir.mkdir(exist_ok=True)
+    max_id = 0
+    hunt_pattern = re.compile(r"H-\d{4}-(\d{3,})\.md")
+    for f in flames_dir.glob("H-*.md"):
+        match = hunt_pattern.match(f.name)
+        if match:
+            current_id = int(match.group(1))
+            if current_id > max_id:
+                max_id = current_id
+    return max_id + 1
 
 SYSTEM_PROMPT = """You are a threat hunter generating HEARTH markdown files.
 Each file MUST focus on exactly ONE MITRE ATT&CK technique - no exceptions.
@@ -183,12 +194,17 @@ def read_file_content(file_path):
             return None
 
 if __name__ == "__main__":
+    next_hunt_number = get_next_hunt_id()
+    
     # Process both .txt and .pdf files
-    for file_path in CTI_INPUT_DIR.glob("*.[tp][dx][tf]"):  # Matches .txt and .pdf
+    files_to_process = list(CTI_INPUT_DIR.glob("*.[tp][dx][tf]"))
+
+    for i, file_path in enumerate(files_to_process):
         content = read_file_content(file_path)
         if content:
-            hunt_id = f"H-2025-{HUNT_COUNTER:03d}"  # Format: H-2025-001, H-2025-002, etc.
-            HUNT_COUNTER += 1
+            current_hunt_number = next_hunt_number + i
+            hunt_id = f"H-2025-{current_hunt_number:03d}"
+            
             out_md = OUTPUT_DIR / f"{hunt_id}.md"
             success = generate_hunt(content, hunt_id, out_md)
 
