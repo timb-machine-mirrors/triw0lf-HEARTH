@@ -1,0 +1,79 @@
+name: "Generate HEARTH Draft from Issue"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  build-and-pr:
+    # Only run on issues with the 'intel-submission' label
+    if: github.event.label.name == 'intel-submission'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python 3"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: "Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai python-dotenv PyPDF2 requests
+
+      - name: "Parse issue and get CTI"
+        id: get_cti
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python HEARTH/scripts/process_issue_body.py
+
+      - name: "Run HEARTH draft generator"
+        id: generate_draft
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python HEARTH/scripts/generate_from_cti.py
+
+      - name: "Create Pull Request"
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
+          committer: "hearthbot <hearthbot@users.noreply.github.com>"
+          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
+          branch: "hearth/issue-${{ github.event.issue.number }}"
+          delete-branch: true
+          title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
+          body: |
+            This PR was automatically generated from issue #${{ github.event.issue.number }}.
+            
+            - **Submitter**: @${{ github.event.issue.user.login }}
+            - **Source Issue**: #${{ github.event.issue.number }}
+            
+            Please review the generated hunt below.
+            
+            Closes #${{ github.event.issue.number }}
+          labels: "needs-review, automated-draft"
+          assignees: "${{ github.event.issue.user.login }}"
+
+      - name: "Comment on issue with PR link"
+        if: steps.create_pr.outputs.pull-request-number
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ✅ Thank you for your submission, @${{ github.event.issue.user.login }}!
+            
+            Your CTI has been processed and a draft pull request has been created.
+            
+            🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 

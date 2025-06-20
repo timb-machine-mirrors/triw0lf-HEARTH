@@ -1,0 +1,34 @@
+name: "🔥 HEARTH CTI Submission"
+description: "Submit a piece of Cyber Threat Intelligence (CTI) to be processed into a HEARTH hunt."
+title: "CTI Submission: [Threat Actor, Malware, or Report Name]"
+labels: ["intel-submission", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for contributing to HEARTH! Please provide the CTI details below. 
+        You can either paste the raw text or provide a direct link to the report (e.g., a PDF link).
+
+  - type: textarea
+    id: cti-paste
+    attributes:
+      label: "Pasted CTI"
+      description: "If the CTI is text-based, paste the full content here."
+      render: markdown
+    validations:
+      required: false
+
+  - type: input
+    id: cti-link
+    attributes:
+      label: "Link to CTI"
+      description: "If the CTI is in a file (e.g., PDF), provide a direct, public link to it."
+      placeholder: "https://example.com/report.pdf"
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        *By submitting this issue, you agree to our contribution guidelines.* 
