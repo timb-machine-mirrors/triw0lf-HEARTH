@@ -28,7 +28,7 @@ jobs:
   # This job runs on every new comment, but only proceeds if it finds an attachment.
   process-file:
     # We only want this to run on comments on issues that have the right label.
-    if: github.event_name == 'issue_comment' && contains(github.event.issue.labels.*.name, 'intel-submission')
+    if: contains(github.event.issue.labels.*.name, 'intel-submission')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,16 +38,37 @@ jobs:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
 
-      - name: "Download CTI file from comment"
-        id: download_attachment
-        uses: peter-evans/download-issue-attachments@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          comment-id: ${{ github.event.comment.id }}
-          path: ./.hearth/intel-drops/
+      - name: "Download Attachments from Comment"
+        id: download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          INTEL_DROP_PATH: ".hearth/intel-drops"
+        run: |
+          set -e
+          mkdir -p $INTEL_DROP_PATH
+          urls=$(echo "$COMMENT_BODY" | grep -o 'https://github.com/.*')
+          if [ -z "$urls" ]; then
+            echo "No attachment URLs found in comment."
+            echo "any_downloaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          for url in $urls; do
+            # The URL in the comment is the HTML page, not the raw asset.
+            # We need to get the real download URL.
+            # This is a bit of a hack, but it works for GitHub's structure.
+            asset_url=$(echo "$url" | sed 's|github.com|uploads.github.com|' | sed 's|/files/|/assets/|')
+            
+            # Use gh to securely download the asset
+            gh api "$asset_url" --header 'Accept: application/octet-stream' > "$INTEL_DROP_PATH/$(basename $url)"
+            
+            echo "Downloaded $(basename $url)"
+          done
+          echo "any_downloaded=true" >> $GITHUB_OUTPUT
 
       - name: "Check if a file was downloaded"
-        if: steps.download_attachment.outputs.any_downloaded == 'false'
+        if: steps.download.outputs.any_downloaded == 'false'
         run: |
           echo "No file was attached to this comment. Skipping."
           exit 0
@@ -71,7 +92,7 @@ jobs:
 
       - name: "Create Pull Request"
         id: create_pr
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
