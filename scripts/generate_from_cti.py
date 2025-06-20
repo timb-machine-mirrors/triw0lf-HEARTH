@@ -173,6 +173,7 @@ def read_file_content(file_path):
 
 if __name__ == "__main__":
     next_hunt_number = get_next_hunt_id()
+    cti_source_url = os.getenv("CTI_SOURCE_URL", "URL not provided")
     
     # Process both .txt and .pdf files
     files_to_process = list(CTI_INPUT_DIR.glob("*.[tp][dx][tf]"))
@@ -197,6 +198,9 @@ if __name__ == "__main__":
                 
                 # Insert hunt_id into the table part of the body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
+
+                # Insert the source CTI link
+                final_content = final_content.replace("- [Source CTI link]", f"- {cti_source_url}")
 
                 # 4. Save the final file
                 try:

@@ -3,32 +3,10 @@ name: "Issue-Driven HEARTH Draft Generation"
 on:
   issues:
     types: [labeled]
-  issue_comment:
-    types: [created]
 
 jobs:
-  # This job runs when an issue is labeled, prompting the user to add their file.
-  request-file:
-    # We only want this to run when the 'intel-submission' label is first added.
-    if: github.event_name == 'issues' && github.event.label.name == 'intel-submission'
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-    steps:
-      - name: "Post a comment to request the CTI file"
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            ✅ Thank you for your submission, @${{ github.event.issue.user.login }}!
-
-            Please attach your CTI file (e.g., a PDF or .txt file) in a new comment below to begin the automated drafting process.
-          reactions: '+1'
-
-  # This job runs on every new comment, but only proceeds if it finds an attachment.
-  process-file:
-    # We only want this to run on comments on issues that have the right label.
-    if: contains(github.event.issue.labels.*.name, 'intel-submission')
+  generate-hunt-from-issue:
+    if: github.event.label.name == 'intel-submission'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,37 +16,17 @@ jobs:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
 
-      - name: "Download Attachments from Comment"
+      - name: "Extract CTI URL from issue"
+        id: extract_url
+        run: |
+          url=$(echo "${{ github.event.issue.body }}" | grep -o 'https://[^)]*')
+          echo "url=$url" >> $GITHUB_OUTPUT
+        
+      - name: "Download CTI content"
         id: download
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          INTEL_DROP_PATH: ".hearth/intel-drops"
         run: |
-          set -e
-          mkdir -p $INTEL_DROP_PATH
-          # This regex correctly extracts the URL from a markdown link like [text](URL)
-          urls=$(echo "$COMMENT_BODY" | sed -n 's/.*(\(https:\/\/github.com\/user-attachments\/files\/[^)]*\)).*/\1/p')
-
-          if [ -z "$urls" ]; then
-            echo "No attachment URLs found in comment."
-            echo "any_downloaded=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          for url in $urls; do
-            filename=$(basename "$url")
-            # Use curl with authentication to download the private attachment
-            curl -s -L -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" "$url" -o "$INTEL_DROP_PATH/$filename"
-            echo "Downloaded $filename"
-          done
-          echo "any_downloaded=true" >> $GITHUB_OUTPUT
-
-      - name: "Check if a file was downloaded"
-        if: steps.download.outputs.any_downloaded == 'false'
-        run: |
-          echo "No file was attached to this comment. Skipping."
-          exit 0
+          mkdir -p .hearth/intel-drops
+          wget -O .hearth/intel-drops/source_cti.txt "${{ steps.extract_url.outputs.url }}"
 
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
@@ -84,6 +42,7 @@ jobs:
         id: generate_draft
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CTI_SOURCE_URL: ${{ steps.extract_url.outputs.url }}
         run: |
           python scripts/generate_from_cti.py
 
@@ -94,21 +53,22 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
           committer: "hearthbot <hearthbot@users.noreply.github.com>"
-          author: "${{ github.event.comment.user.login }} <${{ github.event.comment.user.login }}@users.noreply.github.com>"
-          branch: "hearth/issue-${{ github.event.issue.number }}-${{ github.event.comment.id }}"
+          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
+          branch: "hearth/issue-${{ github.event.issue.number }}"
           delete-branch: true
           title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
           body: |
-            This PR was automatically generated from a file attached to a comment in issue #${{ github.event.issue.number }}.
+            This PR was automatically generated from a CTI link in issue #${{ github.event.issue.number }}.
             
-            - **Submitter**: @${{ github.event.comment.user.login }}
+            - **Submitter**: @${{ github.event.issue.user.login }}
             - **Source Issue**: #${{ github.event.issue.number }}
+            - **Source CTI**: ${{ steps.extract_url.outputs.url }}
             
             Please review the generated hunt below.
             
             Closes #${{ github.event.issue.number }}
           labels: "needs-review, automated-draft"
-          assignees: "${{ github.event.comment.user.login }}"
+          assignees: "${{ github.event.issue.user.login }}"
 
       - name: "Comment on issue with PR link"
         if: steps.create_pr.outputs.pull-request-number
@@ -116,6 +76,6 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            📄 Your file has been processed and a draft pull request has been created. Thank you!
+            📄 Your CTI link has been processed and a draft pull request has been created. Thank you!
             
             🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 
