@@ -188,27 +188,24 @@ if __name__ == "__main__":
             hunt_body = generate_hunt_content(cti_content)
 
             if hunt_body:
-                # 2. Extract the hypothesis (the first line)
-                hypothesis = hunt_body.split('\n', 1)[0]
+                # 2. Construct the full markdown file by prepending the Hunt ID
+                final_content = f"# {hunt_id}\n\n"
+                final_content += hunt_body
 
-                # 3. Construct the full markdown file
-                final_content = f"# {hunt_id}\n"
-                final_content += hunt_body.replace(hypothesis, "").lstrip() # Add body without hypothesis
-                
-                # Insert hunt_id into the table part of the body
+                # 3. Insert hunt_id into the table part of the body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
 
-                # Append the source CTI link to the References section
+                # 4. Append the source CTI link to the References section
                 if cti_source_url and cti_source_url != "URL not provided":
                     final_content += f"\n- [Source CTI Report]({cti_source_url})"
 
-                # 4. Save the final file
+                # 5. Save the final file
                 try:
                     with open(out_md_path, "w") as f:
                         f.write(final_content)
                     print(f"✅ {hunt_id} → {out_md_path}")
                     
-                    # 5. Move the processed intel file
+                    # 6. Move the processed intel file
                     dest_path = PROCESSED_DIR / file_path.name
                     file_path.rename(dest_path)
                     print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
