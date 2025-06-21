@@ -494,7 +494,7 @@ main {
     .filter-container, .sort-container {
         flex-direction: column;
         gap: 15px;
-        align-items: stretch;
+        align-items: flex-start;
     }
     
     .hunts-grid {
