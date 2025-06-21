@@ -301,6 +301,8 @@ main {
 
 .btn-secondary {
     background-color: #444;
+    color: #fff;
+    text-align: center;
 }
 
 .btn-secondary:hover {
@@ -598,36 +600,6 @@ main {
     background-color: #5a0cab;
 }
 
-/* Submission Options Page */
-.submission-options {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-    max-width: 900px;
-    margin: 40px auto;
-}
-
-.option {
-    background-color: #1e1e1e;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.option h3 {
-    margin-top: 0;
-    color: #e0e0e0;
-}
-
-.option h4 {
-    color: #ccc;
-    margin-top: 20px;
-}
-
-.option ol, .option ul {
-    padding-left: 20px;
-}
-
 /* Links */
 a {
     color: #6a0dad;
@@ -655,4 +627,54 @@ footer a {
 
 footer a:hover {
     color: #bbbbbb;
+}
+
+/* Submission Options Page */
+.submission-options {
+    max-width: 800px;
+    margin: 40px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.submission-option {
+    background-color: #1e1e1e;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.submission-option h3 {
+    margin-top: 0;
+    font-size: 24px;
+    color: #ae77d8;
+}
+
+.submission-option h4 {
+    color: #ccc;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.submission-option p, 
+.submission-option li {
+    line-height: 1.7;
+    color: #d0d0d0;
+}
+
+.submission-option ol, 
+.submission-option ul {
+    padding-left: 25px;
+}
+
+.submission-option a {
+    color: #bf9ee3;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.submission-option a:hover {
+    color: #fff;
 }
