@@ -197,29 +197,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sorting logic
   function sortHunts(hunts) {
     const sortValue = sortHuntsSelect.value;
-    const [field, direction] = sortValue.split('-');
+    const direction = sortValue.split('-')[1];
 
-    // Return a sorted COPY of the array, to prevent modifying the original in-place.
+    // Return a sorted COPY of the array.
     return [...hunts].sort((a, b) => {
-      let valA = a[field];
-      let valB = b[field];
+      const valA = a.id;
+      const valB = b.id;
 
-      // Handle numeric sorting for IDs like H001, B002
-      if (field === 'id') {
-        const numA = parseInt(valA.substring(1), 10);
-        const numB = parseInt(valB.substring(1), 10);
-        if (numA !== numB) {
-            return direction === 'asc' ? numA - numB : numB - numA;
-        }
-        // Fallback to letter prefix if numbers are equal
-        valA = valA.charAt(0);
-        valB = valB.charAt(0);
+      // Extract letter and number from IDs like 'H001', 'B002', etc.
+      const letterA = valA.charAt(0);
+      const letterB = valB.charAt(0);
+      const numA = parseInt(valA.substring(1), 10);
+      const numB = parseInt(valB.substring(1), 10);
+
+      // First, compare by the letter prefix (e.g., 'B' vs 'H')
+      if (letterA !== letterB) {
+        return direction === 'asc' ? letterA.localeCompare(letterB) : letterB.localeCompare(letterA);
       }
-      
-      // Use localeCompare for proper, case-insensitive string sorting
-      const comparison = String(valA).localeCompare(String(valB), undefined, { sensitivity: 'base' });
 
-      return direction === 'desc' ? comparison * -1 : comparison;
+      // If letters are the same, compare by number
+      return direction === 'asc' ? numA - numB : numB - numA;
     });
   }
 
