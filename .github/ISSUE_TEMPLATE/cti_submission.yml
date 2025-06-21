@@ -26,6 +26,24 @@ body:
     validations:
       required: false
 
+  - type: input
+    id: submitter-name
+    attributes:
+      label: "Your Name / Handle"
+      description: "How you would like to be credited for this submission."
+      placeholder: "e.g., Jane Doe"
+    validations:
+      required: false
+
+  - type: input
+    id: submitter-link
+    attributes:
+      label: "Link to Profile (Optional)"
+      description: "A link to your professional profile (e.g., GitHub, Twitter, LinkedIn)."
+      placeholder: "https://github.com/janedoe"
+    validations:
+      required: false
+
   - type: markdown
     attributes:
       value: |

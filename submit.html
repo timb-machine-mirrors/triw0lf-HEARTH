@@ -41,6 +41,14 @@
                         <label for="ctiUrl" style="font-weight: bold;">CTI Report URL</label>
                         <input type="url" id="ctiUrl" name="ctiUrl" placeholder="https://example.com/threat-report.pdf" class="search-input" required>
                     </div>
+                    <div class="form-group">
+                        <label for="submitterName">Your Name / Handle</label>
+                        <input type="text" id="submitterName" name="submitterName" placeholder="How you would like to be credited" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="submitterLink">Link to Profile (Optional)</label>
+                        <input type="text" id="submitterLink" name="submitterLink" placeholder="e.g., Twitter, LinkedIn, or GitHub profile">
+                    </div>
                     <button type="submit" class="btn submit-btn">Submit CTI Link</button>
                 </form>
 
@@ -63,12 +71,15 @@
         document.getElementById('ctiSubmissionForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const ctiUrl = document.getElementById('ctiUrl').value;
+            const submitterName = document.getElementById('submitterName').value;
+            const submitterLink = document.getElementById('submitterLink').value;
+
             const repoUrl = 'https://github.com/THORCollective/HEARTH/issues/new';
             const template = 'cti_submission.yml';
             
             const title = `CTI Submission: ${ctiUrl.substring(0, 50)}...`;
 
-            const issueUrl = `${repoUrl}?template=${template}&title=${encodeURIComponent(title)}&cti-source=${encodeURIComponent(ctiUrl)}`;
+            const issueUrl = `${repoUrl}?template=${template}&title=${encodeURIComponent(title)}&cti-source=${encodeURIComponent(ctiUrl)}&submitter-name=${encodeURIComponent(submitterName)}&submitter-link=${encodeURIComponent(submitterLink)}`;
             
             window.open(issueUrl, '_blank');
         });
