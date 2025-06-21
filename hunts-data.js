@@ -424,7 +424,7 @@ const HUNTS_DATA = [
     "id": "H015",
     "category": "Flames",
     "title": "Adversaries are redirecting DNS queries to an inappropriate or false DNS server IP, effectively blocking legitimate communications and potentially compromising the security infrastructure.",
-    "tactic": "Defense Evasion, Impair Defenses: Disable or Modify Tools",
+    "tactic": "Defense Evasion",
     "notes": "<ul> <li><strong>Assumptions:</strong></li><ul><li>If done with local admin right, the attack creates new registry values in the registry key HKLM\\System\\CurrentControlSet\\Services\\Dnscache\\Parameters\\DnsPolicyConfig{UUID</li><li>Value of registry key listed upper contains a domain related to a cybersecurity tool, such as .endpoint.security.microsoft.com</li><li>Add-DnsClientNrptRule Powershell function can be used to reach such purpose</ul></li><li><strong>Data Requirements:</strong><ul><li>Works only on Windows 7 and later operating systems</li><li>Requires to log registry key changes and/or any way to log command execution</ul></li><li><strong>Notes on Limitation:</strong><ul><li>Defenders must have multiple ways to log registry key changes and/or command execution to detect the attack once it was executed by attacker, as it aims to silence cybersecurity tool(s)</ul></li></ul>",
     "tags": [
       "Registry",
