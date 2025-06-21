@@ -5,12 +5,11 @@ on:
     types: [labeled]
 
 jobs:
-  generate-hunt-from-issue:
+  generate_draft:
     if: github.event.label.name == 'intel-submission'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
       issues: write
     steps:
       - name: "Checkout Repo"
@@ -73,12 +72,51 @@ jobs:
           pip install openai python-dotenv PyPDF2
 
       - name: "Run HEARTH draft generator"
-        id: generate_draft
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
+        run: python scripts/generate_from_cti.py
+
+      - name: "Comment on issue pending approval"
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ✅ A new hunt has been drafted from your submission.
+            ⏳ It is now waiting for review and approval before a pull request is created.
+
+      - name: "Upload hunt artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: hunt-draft-issue-${{ github.event.issue.number }}
+          path: |
+            Flames/
+            .hearth/processed-intel-drops/
+
+  create_pr:
+    needs: generate_draft
+    environment: pr-approval
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v4
+      
+      - name: "Download hunt artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          name: hunt-draft-issue-${{ github.event.issue.number }}
+          path: .
+      
+      - name: "Parse Issue Body for PR" # Re-parse to get URLs and author
+        id: parse_issue
         run: |
-          python scripts/generate_from_cti.py
+          body="${{ github.event.issue.body }}"
+          source_url=$(echo "$body" | awk -v RS='### Link to Original Source' 'END{print}' | xargs)
+          echo "source_url=$source_url" >> $GITHUB_OUTPUT
 
       - name: "Create Pull Request"
         id: create_pr
@@ -93,13 +131,10 @@ jobs:
           title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
           body: |
             This PR was automatically generated from CTI provided in issue #${{ github.event.issue.number }}.
-            
             - **Submitter**: @${{ github.event.issue.user.login }}
             - **Source Issue**: #${{ github.event.issue.number }}
             - **Source CTI Link**: ${{ steps.parse_issue.outputs.source_url }}
-            
             Please review the generated hunt below.
-            
             Closes #${{ github.event.issue.number }}
           labels: "needs-review, automated-draft"
           assignees: "${{ github.event.issue.user.login }}"
@@ -110,6 +145,5 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            📄 Your submission has been processed and a draft pull request has been created. Thank you!
-            
+            📄 Your submission has been approved and a draft pull request has been created. Thank you!
             🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 
