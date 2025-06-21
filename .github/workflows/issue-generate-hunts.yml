@@ -79,20 +79,28 @@ jobs:
       - name: "Parse Issue Body"
         id: parse_issue
         run: |
-          body="${{ github.event.issue.body }}"
-          file_url=$(echo "$body" | sed -n 's/.*(\(https:\/\/github.com\/.*\/files\/[0-9]*\/.*\)).*/\1/p' | head -n 1)
+          # Use a safer approach to handle the issue body with special characters
+          echo "${{ github.event.issue.body }}" > /tmp/issue_body.txt
+          
+          # Parse the content from the file instead of direct substitution
+          file_url=$(grep -o 'https://github.com/.*/files/[0-9]*/.*' /tmp/issue_body.txt | head -n 1)
+          
           # Parse the source URL from the issue body - it could be in different formats
           source_url=""
           # Try to find URL after "Link to Original Source" label
-          source_url=$(echo "$body" | grep -A 1 "Link to Original Source" | tail -n 1 | xargs)
+          source_url=$(grep -A 1 "Link to Original Source" /tmp/issue_body.txt | tail -n 1 | xargs)
           # If that didn't work, try to find any URL in the body
           if [ -z "$source_url" ] || [ "$source_url" = "Link to Original Source" ]; then
-            source_url=$(echo "$body" | grep -o 'https://[^[:space:]]*' | head -n 1)
+            source_url=$(grep -o 'https://[^[:space:]]*' /tmp/issue_body.txt | head -n 1)
           fi
+          
           raw_cti=""
           if [ -z "$file_url" ]; then
-            raw_cti=$(echo "$body" | awk '/### CTI Content/,/### Link to Original Source/' | sed '1d;$d')
+            # Extract CTI content between the markers
+            awk '/### CTI Content/,/### Link to Original Source/' /tmp/issue_body.txt | sed '1d;$d' > /tmp/raw_cti.txt
+            raw_cti=$(cat /tmp/raw_cti.txt)
           fi
+          
           echo "file_url=$file_url" >> $GITHUB_OUTPUT
           echo "source_url=$source_url" >> $GITHUB_OUTPUT
           echo "raw_cti<<EOF" >> $GITHUB_OUTPUT
