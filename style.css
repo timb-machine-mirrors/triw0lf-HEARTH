@@ -478,14 +478,23 @@ main {
         text-align: center;
     }
     
+    .logo {
+        width: 60px;
+    }
+
+    .title-section h1 {
+        font-size: 2rem;
+    }
+
     .logo-section {
         flex-direction: column;
         gap: 10px;
     }
     
-    .filter-container {
+    .filter-container, .sort-container {
         flex-direction: column;
         gap: 15px;
+        align-items: stretch;
     }
     
     .hunts-grid {
@@ -495,17 +504,21 @@ main {
     .search-container {
         flex-direction: column;
     }
+
+    .search-input {
+        font-size: 14px;
+    }
     
     .hunt-header {
-        flex-direction: column;
+        flex-direction: row;
         gap: 10px;
-        align-items: flex-start;
+        align-items: center;
     }
     
     .modal-content {
         width: 95%;
-        margin: 10% auto;
-        max-height: 85vh;
+        margin: 5% auto;
+        max-height: 90vh;
     }
     
     #modal-body {
