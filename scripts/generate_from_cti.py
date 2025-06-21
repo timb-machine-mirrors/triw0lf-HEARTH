@@ -135,6 +135,37 @@ def summarize_cti(text, max_length=6000):
         # Fallback: return truncated text with warning
         return f"WARNING: Summarization failed. Using truncated text:\n\n{text[:2000]}..."
 
+def clean_hunt_content(content):
+    """Clean up the AI-generated content by removing unwanted parts."""
+    lines = content.split('\n')
+    cleaned_lines = []
+    skip_until_hypothesis = True
+    
+    for line in lines:
+        # Skip everything until we find the actual hypothesis
+        if skip_until_hypothesis:
+            # Look for lines that start with the hypothesis (not CTI REPORT, not Hypothesis: label)
+            if (line.strip() and 
+                not line.startswith('CTI REPORT:') and 
+                not line.startswith('Hypothesis:') and
+                not line.startswith('---') and
+                not line.startswith('Instructions:') and
+                not line.startswith('Your output should look like this:') and
+                not line.startswith('[Your extremely specific hypothesis]') and
+                not line.startswith('| Hunt #') and
+                not line.startswith('|--------------') and
+                not line.startswith('| [Leave blank]') and
+                not line.startswith('## Why') and
+                not line.startswith('## References')):
+                # This looks like the actual hypothesis
+                skip_until_hypothesis = False
+                cleaned_lines.append(line)
+        else:
+            # We're past the hypothesis, include everything else
+            cleaned_lines.append(line)
+    
+    return '\n'.join(cleaned_lines).strip()
+
 def generate_hunt_content(cti_text, cti_source_url):
     """Generate just the core content of a hunt from CTI text."""
     try:
@@ -197,12 +228,15 @@ if __name__ == "__main__":
             hunt_body = generate_hunt_content(cti_content, cti_source_url)
 
             if hunt_body:
-                # 2. Construct the full markdown file
+                # 2. Clean up the AI-generated content
+                cleaned_hunt_body = clean_hunt_content(hunt_body)
+                
+                # 3. Construct the full markdown file
                 final_content = f"# {hunt_id}\n\n"
-                final_content += hunt_body
+                final_content += cleaned_hunt_body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
 
-                # 3. Save the final file
+                # 4. Save the final file
                 try:
                     with open(out_md_path, "w") as f:
                         f.write(final_content)
@@ -211,7 +245,7 @@ if __name__ == "__main__":
                         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                             print(f"generated_file_path={out_md_path}", file=f)
                     
-                    # 4. Move the processed intel file if it's a new hunt
+                    # 5. Move the processed intel file if it's a new hunt
                     if not existing_hunt_path:
                         dest_path = PROCESSED_DIR / file_path.name
                         file_path.rename(dest_path)

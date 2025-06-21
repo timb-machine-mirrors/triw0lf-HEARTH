@@ -81,8 +81,14 @@ jobs:
         run: |
           body="${{ github.event.issue.body }}"
           file_url=$(echo "$body" | sed -n 's/.*(\(https:\/\/github.com\/.*\/files\/[0-9]*\/.*\)).*/\1/p' | head -n 1)
-          # Correctly parse only the line directly under the heading
-          source_url=$(echo "$body" | awk '/### Link to Original Source/{getline; print; exit}')
+          # Parse the source URL from the issue body - it could be in different formats
+          source_url=""
+          # Try to find URL after "Link to Original Source" label
+          source_url=$(echo "$body" | grep -A 1 "Link to Original Source" | tail -n 1 | xargs)
+          # If that didn't work, try to find any URL in the body
+          if [ -z "$source_url" ] || [ "$source_url" = "Link to Original Source" ]; then
+            source_url=$(echo "$body" | grep -o 'https://[^[:space:]]*' | head -n 1)
+          fi
           raw_cti=""
           if [ -z "$file_url" ]; then
             raw_cti=$(echo "$body" | awk '/### CTI Content/,/### Link to Original Source/' | sed '1d;$d')
