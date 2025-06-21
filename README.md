@@ -35,14 +35,21 @@ We welcome contributions to the Hunting Exchange And Research Threat Hub! Contri
 
 ### 🔥 Submit a Hunt Idea
 
-We welcome contributions from all threat hunters! To share your ideas:
+We welcome contributions from all threat hunters! You can submit a hunt in two ways:
 
+**Option 1: Automated CTI Submission (Recommended)**
 1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
-2. Select "HEARTH Hunt Submission Form"
-3. Fill out the required information about your hunt
+2. Select "🔥 HEARTH CTI Submission"
+3. Fill out the required information about your hunt (paste CTI, upload a file, and/or provide a source link)
 4. Submit for review
 
-> See our [Contribution Guidelines](/Keepers/Contributing.md) for detailed instructions and requirements.
+**Option 2: Manual Hunt Submission**
+1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
+2. Select "🔥 Hunt Template"
+3. Fill out the hunt template with your hypothesis, reasoning, and references
+4. Submit for review
+
+> See our [Contribution Guidelines](/Keepers/CONTRIBUTING.md) for detailed instructions and requirements.
 
 > [!IMPORTANT] 
 > Approved HEARTH Hunt submissions receive an official hunt number, community recognition, and integration into the HEARTH repository.
