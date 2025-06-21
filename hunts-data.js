@@ -615,7 +615,7 @@ const HUNTS_DATA = [
     "id": "M006",
     "category": "Alchemy",
     "title": "Dictionary-based DGAs are a rare threat that require a model-based approach. These domains are algorithmically generated based on a dictionary of source words. Like traditional Domain Generation Algorithms, machine learning models can distinguish DGA / Non-DGA domains by training on sample data to learn on lexical features separating the classes.",
-    "tactic": "Command & Control",
+    "tactic": "Command and Control",
     "notes": "<ul><li>Deploying a model-based detection against a high-volume logging source like web traffic can be costly and resource-intensive. For this task, I recommend a retroactive hunt using a deduplicated list of domains, enabling a quick and efficient M-ATH method for finding threats, or at least reducing our dataset for hunting.</br><li>This is an evolving research area. Efficacy of a model may be heavily tied to the timeliness of the data, or the inclusion of the target malware family in the underlying training set.</br><li>Sample data and pre-trained models are available for this hunt, however it is also possible to generate new data by modifying the reverse-engineered DGA algorithms [here](https://github.com/baderj/domain_generation_algorithms).</br><li>False positives may be caused by Content Delivery Networks, Ad-tracking mechanisms.",
     "tags": [
       "CommandandControl,",
