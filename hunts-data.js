@@ -120,7 +120,7 @@ const HUNTS_DATA = [
     "id": "B007",
     "category": "Embers",
     "title": "Adversaries are automatically exfiltrating email data using email forwarding rules.",
-    "tactic": "Collection, Exfilitration",
+    "tactic": "Collection, Exfiltration",
     "notes": "Email forwarding rules may be disabled in your organization, it may be beneficial to see what rules were setup regardless of success to identify potential malicious activity.",
     "tags": [
       "Collection",
