@@ -45,7 +45,7 @@ We welcome contributions from all threat hunters! You can submit a hunt in two w
 
 **Option 2: Manual Hunt Submission**
 1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
-2. Select "🔥 Hunt Template"
+2. Select "🔥 HEARTH - Hunt Submission Form"
 3. Fill out the hunt template with your hypothesis, reasoning, and references
 4. Submit for review
 
