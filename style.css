@@ -598,6 +598,36 @@ main {
     background-color: #5a0cab;
 }
 
+/* Submission Options Page */
+.submission-options {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+.option {
+    background-color: #1e1e1e;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.option h3 {
+    margin-top: 0;
+    color: #e0e0e0;
+}
+
+.option h4 {
+    color: #ccc;
+    margin-top: 20px;
+}
+
+.option ol, .option ul {
+    padding-left: 20px;
+}
+
 /* Links */
 a {
     color: #6a0dad;
