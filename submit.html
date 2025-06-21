@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit a Hunt - HEARTH</title>
+    <title>Submission Options - HEARTH</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,79 +27,31 @@
 
     <main>
         <section class="intro">
-            <h2>Submit a Threat Hunt</h2>
-            <p>Share your threat hunting idea with the community by filling out the form below.</p>
+            <h2>Submission Options</h2>
+            <p>Choose your preferred method to contribute a threat hunt to the community.</p>
         </section>
 
-        <section class="submission-form">
-            <form id="huntSubmissionForm">
-                <div class="form-group">
-                    <label for="huntTitle">Idea / Hypothesis</label>
-                    <input type="text" id="huntTitle" name="huntTitle" placeholder="A short, clear summary of the hunt idea" required>
-                </div>
+        <section class="submission-options">
+            <div class="submission-option">
+                <h3>Option 1: Automated CTI Submission (Recommended)</h3>
+                <p>Submit a link to a CTI report, and our system will automatically generate a threat hunt hypothesis.</p>
                 
-                <div class="form-group">
-                    <label for="huntCategory">Category</label>
-                    <select id="huntCategory" name="huntCategory" required>
-                        <option value="" disabled selected>Select a category...</option>
-                        <option value="Flames">Flames (High-Fidelity, Specific)</option>
-                        <option value="Embers">Embers (Broad, Requires Baselines)</option>
-                        <option value="Alchemy">Alchemy (Model-Assisted)</option>
-                    </select>
-                </div>
+                <form id="ctiSubmissionForm">
+                    <div class="form-group">
+                        <label for="ctiUrl" style="font-weight: bold;">CTI Report URL</label>
+                        <input type="url" id="ctiUrl" name="ctiUrl" placeholder="https://example.com/threat-report.pdf" class="search-input" required>
+                    </div>
+                    <button type="submit" class="btn submit-btn">Submit CTI Link</button>
+                </form>
 
-                <div class="form-group">
-                    <label for="huntTactic">Tactic(s) (select one or more)</label>
-                    <select id="huntTactic" name="huntTactic" multiple required>
-                        <option value="Reconnaissance">Reconnaissance</option>
-                        <option value="Resource Development">Resource Development</option>
-                        <option value="Initial Access">Initial Access</option>
-                        <option value="Execution">Execution</option>
-                        <option value="Persistence">Persistence</option>
-                        <option value="Privilege Escalation">Privilege Escalation</option>
-                        <option value="Defense Evasion">Defense Evasion</option>
-                        <option value="Credential Access">Credential Access</option>
-                        <option value="Discovery">Discovery</option>
-                        <option value="Lateral Movement">Lateral Movement</option>
-                        <option value="Collection">Collection</option>
-                        <option value="Command and Control">Command and Control</option>
-                        <option value="Exfiltration">Exfiltration</option>
-                        <option value="Impact">Impact</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="huntTags">Tags</label>
-                    <input type="text" id="huntTags" name="huntTags" placeholder="e.g., #bruteforce, #windows, #lolbin" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="huntNotes">Notes</label>
-                    <textarea id="huntNotes" name="huntNotes" rows="3" placeholder="Any implementation notes, limitations, or assumptions"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="huntWhy">"Why" Section</label>
-                    <textarea id="huntWhy" name="huntWhy" rows="4" placeholder="Explain why this hunt is valuable and what risks it addresses" required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="huntReferences">References</label>
-                    <textarea id="huntReferences" name="huntReferences" rows="4" placeholder="Links to MITRE ATT&CK, blog posts, etc. One link per line." required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="submitterName">Your Name / Handle</label>
-                    <input type="text" id="submitterName" name="submitterName" placeholder="How you would like to be credited" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="submitterLink">Link to Profile (Optional)</label>
-                    <input type="text" id="submitterLink" name="submitterLink" placeholder="e.g., Twitter, LinkedIn, or GitHub profile">
-                </div>
-
-                <button type="submit" class="btn submit-btn">Preview Submission</button>
-            </form>
+                <p style="margin-top: 30px;">Alternatively, you can manually create an issue using our template:</p>
+                <a href="https://github.com/THORCollective/HEARTH/issues/new?template=cti_submission.yml" target="_blank" class="btn btn-secondary">Create CTI Issue on GitHub</a>
+            </div>
+            <div class="submission-option">
+                <h3>Option 2: Manual Submission</h3>
+                <p>If you have a fully-formed hunt idea and want to fill out the details manually, you can use our traditional submission form.</p>
+                <a href="submit-manual.html" class="btn submit-btn" style="margin-top: 20px; display: inline-block;">Submit Manually</a>
+            </div>
         </section>
     </main>
 
@@ -107,6 +59,21 @@
         <p>&copy; 2025 THOR Collective | <a href="https://github.com/THORCollective/HEARTH">GitHub Repository</a></p>
     </footer>
 
-    <script src="submit.js"></script>
+    <script>
+        document.getElementById('ctiSubmissionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const ctiUrl = document.getElementById('ctiUrl').value;
+            const repoUrl = 'https://github.com/THORCollective/HEARTH/issues/new';
+            const template = 'cti_submission.yml';
+            
+            const title = `CTI Submission: ${ctiUrl.substring(0, 50)}...`;
+            const body = `### Link to Original Source\n\n${ctiUrl}\n\n### CTI Content\n\n*(This will be processed automatically by our system. Please leave this section as is.)*`;
+
+            const issueUrl = `${repoUrl}?template=${template}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+            
+            window.open(issueUrl, '_blank');
+        });
+    </script>
+
 </body>
 </html> 

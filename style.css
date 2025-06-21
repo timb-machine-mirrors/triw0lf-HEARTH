@@ -85,28 +85,24 @@ main {
 }
 
 .search-container {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-grow: 1;
+    margin-right: 20px;
+    position: relative;
 }
 
 .search-input {
-    flex: 1;
-    padding: 12px 16px;
+    width: 100%;
+    padding: 15px 20px;
     border: 2px solid #333;
     border-radius: 8px;
     background-color: #2a2a2a;
     color: #e0e0e0;
     font-size: 16px;
-    transition: border-color 0.3s;
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: #6a0dad;
+    box-sizing: border-box;
 }
 
 .clear-btn {
+    position: absolute;
     padding: 12px 20px;
     background-color: #444;
     color: white;
