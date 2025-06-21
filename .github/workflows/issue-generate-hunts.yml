@@ -78,19 +78,13 @@ jobs:
         id: parse_issue
         run: |
           body="${{ github.event.issue.body }}"
-          
-          # Extract file URL from markdown link like [text](URL)
           file_url=$(echo "$body" | sed -n 's/.*(\(https:\/\/github.com\/.*\/files\/[0-9]*\/.*\)).*/\1/p' | head -n 1)
-          
-          # Extract source URL from under the specific markdown heading
-          source_url=$(echo "$body" | awk -v RS='### Link to Original Source' 'END{print}' | xargs)
-
-          # Extract raw CTI text if no file is attached
+          # Correctly parse only the line directly under the heading
+          source_url=$(echo "$body" | awk '/### Link to Original Source/{getline; print; exit}')
           raw_cti=""
           if [ -z "$file_url" ]; then
             raw_cti=$(echo "$body" | awk '/### CTI Content/,/### Link to Original Source/' | sed '1d;$d')
           fi
-
           echo "file_url=$file_url" >> $GITHUB_OUTPUT
           echo "source_url=$source_url" >> $GITHUB_OUTPUT
           echo "raw_cti<<EOF" >> $GITHUB_OUTPUT
@@ -145,7 +139,12 @@ jobs:
           git add Flames/*.md
           git commit -m "feat(draft): Update hunt from issue #${{ github.event.issue.number }}"
           git remote set-url origin https://x-access-token:${{ secrets.HEARTH_TOKEN }}@github.com/${{ github.repository }}
-          git push
+          # Use --set-upstream for the initial push, and a simple push for subsequent regenerations.
+          if [ "${{ github.event.label.name }}" == "regenerate" ]; then
+            git push
+          else
+            git push --set-upstream origin draft/issue-${{ github.event.issue.number }}
+          fi
 
       - name: "Comment on issue with draft link"
         uses: peter-evans/create-or-update-comment@v4
