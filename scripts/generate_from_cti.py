@@ -33,7 +33,7 @@ SYSTEM_PROMPT = """You are a threat hunter generating HEARTH markdown files.
 Each file MUST focus on exactly ONE MITRE ATT&CK technique - no exceptions.
 You MUST scope the hypothesis to be as narrow and specific as possible.
 CRITICAL: Do NOT list or enumerate techniques at the start of the markdown file.
-The markdown MUST start directly with the hunt ID heading (e.g., "# H-2025-001").
+The markdown MUST start directly with the hypothesis text, not a heading.
 
 When selecting which technique to focus on from multiple TTPs, prioritize based on:
 1. Actionability - Choose the TTP that is most observable in logs/telemetry
@@ -52,7 +52,7 @@ All hypotheses must:
 - Use firm language (e.g., "Threat actors are…", "Adversaries are…")
 - Avoid actor names in the hypothesis (they go in the Why section)
 - Do not include MITRE technique numbers in the hypothesis
-- Start directly with the hunt ID heading - no technique lists or preambles
+- The output MUST begin directly with the hypothesis text. DO NOT include a title or markdown heading.
 - If it's a vulnerability, do not use the CVE name or state it's a known vulnerability but rather the technique name
 
 Examples of BAD (too broad) hypotheses:
