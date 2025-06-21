@@ -199,7 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortValue = sortHuntsSelect.value;
     const [field, direction] = sortValue.split('-');
 
-    return hunts.sort((a, b) => {
+    // Return a sorted COPY of the array, to prevent modifying the original in-place.
+    return [...hunts].sort((a, b) => {
       let valA = a[field];
       let valB = b[field];
 
@@ -214,13 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
         valA = valA.charAt(0);
         valB = valB.charAt(0);
       }
-
-      let comparison = 0;
-      if (valA > valB) {
-        comparison = 1;
-      } else if (valA < valB) {
-        comparison = -1;
-      }
+      
+      // Use localeCompare for proper, case-insensitive string sorting
+      const comparison = String(valA).localeCompare(String(valB), undefined, { sensitivity: 'base' });
 
       return direction === 'desc' ? comparison * -1 : comparison;
     });
