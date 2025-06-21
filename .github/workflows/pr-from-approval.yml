@@ -20,7 +20,7 @@ jobs:
         id: create_pr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HEARTH_TOKEN }}
           commit-message: "feat(hunt): New hunt from approved issue #${{ github.event.issue.number }}"
           committer: "hearthbot <hearthbot@users.noreply.github.com>"
           author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
@@ -40,6 +40,7 @@ jobs:
         if: steps.create_pr.outputs.pull-request-number
         uses: peter-evans/create-or-update-comment@v4
         with:
+          token: ${{ secrets.HEARTH_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           body: |
             🚀 Your submission has been approved and a pull request has been created. Thank you!

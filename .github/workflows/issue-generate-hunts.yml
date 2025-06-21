@@ -85,11 +85,13 @@ jobs:
           git checkout -b draft/issue-${{ github.event.issue.number }}
           git add Flames/*.md
           git commit -m "feat(draft): Generate hunt from issue #${{ github.event.issue.number }}"
-          git push -u origin draft/issue-${{ github.event.issue.number }}
+          git remote set-url origin https://x-access-token:${{ secrets.HEARTH_TOKEN }}@github.com/${{ github.repository }}
+          git push --set-upstream origin draft/issue-${{ github.event.issue.number }}
 
       - name: "Comment on issue with draft link"
         uses: peter-evans/create-or-update-comment@v4
         with:
+          token: ${{ secrets.HEARTH_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           body: |
             ✅ A new hunt has been drafted from your submission.
