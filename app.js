@@ -177,14 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
       card.appendChild(submitter);
     }
 
-    // Notes (preview)
-    if (hunt.notes) {
-      const notes = document.createElement('div');
-      notes.className = 'hunt-notes';
-      notes.textContent = hunt.notes.length > 100 ? hunt.notes.substring(0, 100) + '...' : hunt.notes;
-      card.appendChild(notes);
-    }
-
     // Click indicator
     const clickIndicator = document.createElement('div');
     clickIndicator.className = 'hunt-click-indicator';
