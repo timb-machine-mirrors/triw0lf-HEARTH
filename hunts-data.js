@@ -101,7 +101,7 @@ const HUNTS_DATA = [
     "id": "B006",
     "category": "Embers",
     "title": "Adversaries are leveraging suspicious browser extensions to collect and exfiltrate sensitive data.",
-    "tactic": "Collection, Exfilitration",
+    "tactic": "Collection, Exfiltration",
     "notes": "The scope of this hunt could become too wide without defining what is considered known good browser extensions. Consider focusing your first baseline on a subsection of the business, specific browser, or by excluding allowed extensions.",
     "tags": [
       "Collection",
@@ -403,7 +403,7 @@ const HUNTS_DATA = [
     "id": "H014",
     "category": "Flames",
     "title": "An adversary is leveraging Windows named pipes to establish covert command-and-control (C2) channels, enabling lateral movement and maintaining persistence within the network. Named pipes, a common interprocess communication (IPC) mechanism in Windows, can be abused to facilitate stealthy data exchange between compromised systems.",
-    "tactic": "Command and Control (TA0011) - Application Layer Protocol: Named Pipes (T1071.001)",
+    "tactic": "Command and Control",
     "notes": "<ul> <li>Named Pipes as C2 Channels: Named pipes are inter-process communication mechanisms in Windows environments. Adversaries exploit them to create covert C2 channels, enabling stealthy communication between compromised systems.</li><br><li>Detection Strategy: Monitor Sysmon Event ID 17 (Pipe Creation) for the creation of suspicious named pipes. Correlate these events with process creation logs (Event ID 1) to identify unusual parent-child process relationships, which may indicate malicious activity.</li><br><li>Reference List: Utilize a curated list of named pipes commonly associated with adversary techniques to aid in identifying potential threats.</li></br>",
     "tags": [
       "CobaltStrike",
@@ -496,6 +496,26 @@ const HUNTS_DATA = [
     "why": "- Detecting this behavior is crucial as it can lead to unauthorized access to sensitive data and systems in the cloud environment.\n- If successful, the threat actors can escalate their privileges, potentially gaining full control over the cloud environment and enabling them to exfiltrate sensitive data.\n- This technique has been observed in larger campaigns targeting cloud environments, indicating a broader threat landscape.",
     "references": "- [MITRE ATT&CK T1098 - Account Manipulation](https://attack.mitre.org/techniques/T1098/)\n- [Palo Alto Networks - Serverless Security](https://www.paloaltonetworks.com/cortex/secure-serverless)\n- [Source CTI Report](https://unit42.paloaltonetworks.com/serverless-authentication-cloud/)",
     "file_path": "Flames/H018.md"
+  },
+  {
+    "id": "H019",
+    "category": "Flames",
+    "title": "Threat actors are leveraging Linux Executable and Linkage Format (ELF) files to deploy malware families on cloud infrastructure endpoints running Linux OS, with the immediate tactical goal of gaining unauthorized access and maintaining persistence.",
+    "tactic": "Persistence, Initial Access",
+    "notes": "Based on ATT&CK technique T1204 (User Execution), using ELF files.",
+    "tags": [
+      "persistence",
+      "initialaccess",
+      "userexecution",
+      "ELF"
+    ],
+    "submitter": {
+      "name": "hearth-auto-intel",
+      "link": "https://github.com/THORCollective/HEARTH"
+    },
+    "why": "- Detecting the use of ELF files to deploy malware is critical as it signifies a targeted attack on Linux-based cloud infrastructure, which is widely used in enterprise environments.\n- The tactical impact of a successful attack includes unauthorized access to cloud infrastructure, potential data breaches, and the ability for the threat actor to maintain persistence within the compromised system.\n- This behavior could be linked to larger campaigns targeting cloud infrastructure, given the increasing trend of threat actors weaponizing ELF files.",
+    "references": "- [MITRE ATT&CK User Execution](https://attack.mitre.org/techniques/T1204/)\n- [Unit 42 CTI Report](https://unit42.paloaltonetworks.com/)\n- [Source CTI Report](https://unit42.paloaltonetworks.com/elf-based-malware-targets-cloud/)",
+    "file_path": "Flames/H019.md"
   },
   {
     "id": "M001",
