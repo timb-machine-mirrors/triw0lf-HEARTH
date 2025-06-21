@@ -13,30 +13,61 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: "Create Pull Request"
         id: create_pr
-        uses: peter-evans/create-pull-request@v7
+        uses: actions/github-script@v6
         with:
-          token: ${{ secrets.HEARTH_TOKEN }}
-          commit-message: "feat(hunt): New hunt from approved issue #${{ github.event.issue.number }}"
-          committer: "hearthbot <hearthbot@users.noreply.github.com>"
-          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
-          branch: "draft/issue-${{ github.event.issue.number }}"
-          base: main
-          delete-branch: true
-          title: "🔥 Hunt from Issue #${{ github.event.issue.number }}"
-          body: |
-            This PR was automatically generated from an approved submission in issue #${{ github.event.issue.number }}.
-            - **Submitter**: @${{ github.event.issue.user.login }}
-            - **Source Issue**: #${{ github.event.issue.number }}
-            Closes #${{ github.event.issue.number }}
-          labels: "needs-review, automated-pr"
-          assignees: "${{ github.event.issue.user.login }}"
+          github-token: ${{ secrets.HEARTH_TOKEN }}
+          script: |
+            const issueNumber = context.issue.number;
+            const branchName = `draft/issue-${issueNumber}`;
+            
+            try {
+              // Check if the branch exists and has differences from main
+              const { data: compareData } = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: 'main',
+                head: branchName
+              });
+              
+              if (compareData.ahead_by === 0) {
+                core.setFailed(`Branch ${branchName} has no differences from main. Cannot create PR.`);
+                return;
+              }
+              
+              // Create the pull request
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔥 Hunt from Issue #${issueNumber}`,
+                body: `This PR was automatically generated from an approved submission in issue #${issueNumber}.\n- **Submitter**: @${context.issue.user.login}\n- **Source Issue**: #${issueNumber}\n\nCloses #${issueNumber}`,
+                head: branchName,
+                base: 'main'
+              });
+              
+              // Add labels and assignees
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['needs-review', 'automated-pr']
+              });
+              
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                assignees: [context.issue.user.login]
+              });
+              
+              core.setOutput('pull-request-number', pr.number);
+              console.log(`✅ Created PR #${pr.number} from branch ${branchName}`);
+              
+            } catch (error) {
+              console.error('Error creating PR:', error);
+              core.setFailed(`Failed to create PR: ${error.message}`);
+            }
 
       - name: "Comment on issue with PR link"
         if: steps.create_pr.outputs.pull-request-number
