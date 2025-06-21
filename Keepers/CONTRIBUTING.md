@@ -35,7 +35,7 @@ If you prefer to write your own hunt hypothesis from scratch:
 
 1. **Go to the [HEARTH Issues page](https://github.com/THORCollective/HEARTH/issues)**
 2. **Click "New issue"**
-3. **Select "🔥 Hunt Template"** from the template options
+3. **Select "🔥 HEARTH - Hunt Submission Form"** from the template options
 4. **Fill out the hunt template** with your hypothesis, reasoning, and references
 5. **Submit the issue**
 
