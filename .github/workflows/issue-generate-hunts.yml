@@ -1,4 +1,4 @@
-name: "Draft Hunt from Issue"
+name: "Draft or Regenerate Hunt from Issue"
 
 on:
   issues:
@@ -6,14 +6,73 @@ on:
 
 jobs:
   generate_draft:
-    if: github.event.label.name == 'intel-submission'
+    if: github.event.label.name == 'intel-submission' || github.event.label.name == 'regenerate'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
+      issues: read
+      pull-requests: write
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@v4
+
+      - name: "Check Regeneration Count"
+        id: check_regen
+        if: github.event.label.name == 'regenerate'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.HEARTH_TOKEN}}
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const regenComment = comments.reverse().find(comment => 
+              comment.user.login === 'github-actions[bot]' && /Attempt \d+\/5/.test(comment.body)
+            );
+            let attempt = 0;
+            if (regenComment) {
+              const match = regenComment.body.match(/Attempt (\d+)\/5/);
+              if (match) {
+                attempt = parseInt(match[1], 10);
+              }
+            }
+            console.log(`Current attempt: ${attempt}`);
+            core.setOutput('attempt_count', attempt);
+      
+      - name: "Halt if Max Regenerations Reached"
+        if: steps.check_regen.outputs.attempt_count >= 5
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.HEARTH_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ⚠️ **Maximum Regeneration Limit Reached (5/5)**
+            This hunt has been regenerated the maximum number of times. Please review the current draft or close this issue and start a new submission with different CTI.
+      
+      - name: "Fail workflow if max reached"
+        if: steps.check_regen.outputs.attempt_count >= 5
+        run: exit 1
+      
+      - name: "Set next attempt number"
+        id: next_attempt
+        run: echo "attempt_number=$((${{ steps.check_regen.outputs.attempt_count || 0 }} + 1))" >> $GITHUB_OUTPUT
+      
+      - name: "Setup Git Branch"
+        run: |
+          if [ "${{ github.event.label.name }}" == "regenerate" ]; then
+            git checkout draft/issue-${{ github.event.issue.number }}
+          else
+            git checkout -b draft/issue-${{ github.event.issue.number }}
+          fi
+      
+      - name: "Find existing hunt file if regenerating"
+        id: find_hunt
+        if: github.event.label.name == 'regenerate'
+        run: |
+          HUNT_FILE=$(ls Flames/H-*.md | head -n 1)
+          echo "hunt_file_path=$HUNT_FILE" >> $GITHUB_OUTPUT
 
       - name: "Parse Issue Body"
         id: parse_issue
@@ -76,17 +135,17 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
+          EXISTING_HUNT_FILE: ${{ steps.find_hunt.outputs.hunt_file_path }}
         run: python scripts/generate_from_cti.py
 
       - name: "Commit and push generated hunt"
         run: |
           git config --global user.name 'hearthbot'
           git config --global user.email 'hearthbot@users.noreply.github.com'
-          git checkout -b draft/issue-${{ github.event.issue.number }}
           git add Flames/*.md
-          git commit -m "feat(draft): Generate hunt from issue #${{ github.event.issue.number }}"
+          git commit -m "feat(draft): Update hunt from issue #${{ github.event.issue.number }}"
           git remote set-url origin https://x-access-token:${{ secrets.HEARTH_TOKEN }}@github.com/${{ github.repository }}
-          git push --set-upstream origin draft/issue-${{ github.event.issue.number }}
+          git push
 
       - name: "Comment on issue with draft link"
         uses: peter-evans/create-or-update-comment@v4
@@ -94,9 +153,22 @@ jobs:
           token: ${{ secrets.HEARTH_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           body: |
-            ✅ A new hunt has been drafted from your submission.
+            ${{ github.event.label.name == 'regenerate' && format('♻️ A new version of the hunt has been drafted! (Attempt {0}/5)', steps.next_attempt.outputs.attempt_number) || '✅ A new hunt has been drafted from your submission.' }}
             
-            Please review the generated file here:
+            Please review the updated file here:
             [**View Hunt Draft**](https://github.com/${{ github.repository }}/blob/draft/issue-${{ github.event.issue.number }}/${{ steps.generate_draft_file.outputs.generated_file_path }})
             
-            If it looks good, add the `approved` label to this issue to create the pull request. 
+            If it looks good, add the `approved` label. To try again, add the `regenerate` label.
+
+      - name: "Remove 'regenerate' label"
+        if: github.event.label.name == 'regenerate'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.HEARTH_TOKEN}}
+          script: |
+            github.rest.issues.removeLabel({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'regenerate'
+            }) 

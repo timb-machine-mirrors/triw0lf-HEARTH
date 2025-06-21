@@ -171,48 +171,52 @@ def read_file_content(file_path):
             return None
 
 if __name__ == "__main__":
-    next_hunt_number = get_next_hunt_id()
-    cti_source_url = os.getenv("CTI_SOURCE_URL", "URL not provided")
+    existing_hunt_path = os.getenv("EXISTING_HUNT_FILE")
     
-    # Process both .txt and .pdf files
+    if existing_hunt_path:
+        out_md_path = Path(existing_hunt_path)
+        hunt_id = out_md_path.stem
+        print(f"🔄 Regenerating hunt for {hunt_id} at {out_md_path}")
+    else:
+        next_hunt_number = get_next_hunt_id()
+        hunt_id = f"H-2025-{next_hunt_number:03d}"
+        out_md_path = OUTPUT_DIR / f"{hunt_id}.md"
+        print(f"✨ Generating new hunt {hunt_id} at {out_md_path}")
+
+    cti_source_url = os.getenv("CTI_SOURCE_URL", "URL not provided")
     files_to_process = list(CTI_INPUT_DIR.glob("*.[tp][dx][tf]"))
 
-    for i, file_path in enumerate(files_to_process):
+    # Since this script runs per-issue, we only expect one file.
+    if files_to_process:
+        file_path = files_to_process[0]
         cti_content = read_file_content(file_path)
+        
         if cti_content:
-            current_hunt_number = next_hunt_number + i
-            hunt_id = f"H-2025-{current_hunt_number:03d}"
-            out_md_path = OUTPUT_DIR / f"{hunt_id}.md"
-
             # 1. Generate the core hunt content from the AI
             hunt_body = generate_hunt_content(cti_content)
 
             if hunt_body:
-                # 2. Construct the full markdown file by prepending the Hunt ID
+                # 2. Construct the full markdown file
                 final_content = f"# {hunt_id}\n\n"
                 final_content += hunt_body
-
-                # 3. Insert hunt_id into the table part of the body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
-
-                # 4. Append the source CTI link to the References section
                 if cti_source_url and cti_source_url != "URL not provided":
                     final_content += f"\n- [Source CTI Report]({cti_source_url})"
 
-                # 5. Save the final file
+                # 3. Save the final file
                 try:
                     with open(out_md_path, "w") as f:
                         f.write(final_content)
                     print(f"✅ {hunt_id} → {out_md_path}")
-                    # Set output for the GitHub Action
                     if os.getenv("GITHUB_OUTPUT"):
                         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                             print(f"generated_file_path={out_md_path}", file=f)
                     
-                    # 6. Move the processed intel file
-                    dest_path = PROCESSED_DIR / file_path.name
-                    file_path.rename(dest_path)
-                    print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
+                    # 4. Move the processed intel file if it's a new hunt
+                    if not existing_hunt_path:
+                        dest_path = PROCESSED_DIR / file_path.name
+                        file_path.rename(dest_path)
+                        print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
 
                 except Exception as e:
                     print(f"❌ Could not write file or move intel: {e}")
@@ -220,3 +224,5 @@ if __name__ == "__main__":
                 print(f"❌ Failed to generate hunt content for {file_path.name}")
         else:
             print(f"❌ Skipping {file_path} due to reading errors")
+    else:
+        print("🤷 No CTI files found to process.")
