@@ -12,10 +12,10 @@ body:
     id: cti-content
     attributes:
       label: "CTI Content"
-      description: "Paste the CTI text directly, or click to upload a file (PDF, TXT, etc.)."
-      placeholder: "Paste CTI here or upload a file..."
+      description: "This will be populated automatically by our backend process. You can leave this empty."
+      value: "*(This will be processed automatically by our system. Please leave this section as is.)*"
     validations:
-      required: true
+      required: false
 
   - type: input
     id: cti-source

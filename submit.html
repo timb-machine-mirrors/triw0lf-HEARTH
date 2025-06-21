@@ -67,9 +67,8 @@
             const template = 'cti_submission.yml';
             
             const title = `CTI Submission: ${ctiUrl.substring(0, 50)}...`;
-            const body = `### Link to Original Source\n\n${ctiUrl}\n\n### CTI Content\n\n*(This will be processed automatically by our system. Please leave this section as is.)*`;
 
-            const issueUrl = `${repoUrl}?template=${template}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+            const issueUrl = `${repoUrl}?template=${template}&title=${encodeURIComponent(title)}&cti-source=${encodeURIComponent(ctiUrl)}`;
             
             window.open(issueUrl, '_blank');
         });
