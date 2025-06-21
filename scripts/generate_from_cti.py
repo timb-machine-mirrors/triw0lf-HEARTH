@@ -95,6 +95,7 @@ Your output should look like this:
 
 ## References
 - [MITRE ATT&CK link]
+- [Source CTI Report]({cti_source_url})
 """
 
 def summarize_cti(text, max_length=6000):
@@ -134,11 +135,11 @@ def summarize_cti(text, max_length=6000):
         # Fallback: return truncated text with warning
         return f"WARNING: Summarization failed. Using truncated text:\n\n{text[:2000]}..."
 
-def generate_hunt_content(cti_text):
+def generate_hunt_content(cti_text, cti_source_url):
     """Generate just the core content of a hunt from CTI text."""
     try:
         summary = summarize_cti(cti_text)
-        prompt = USER_TEMPLATE.format(cti_text=summary)
+        prompt = USER_TEMPLATE.format(cti_text=summary, cti_source_url=cti_source_url)
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role":"system","content":SYSTEM_PROMPT},
@@ -193,15 +194,13 @@ if __name__ == "__main__":
         
         if cti_content:
             # 1. Generate the core hunt content from the AI
-            hunt_body = generate_hunt_content(cti_content)
+            hunt_body = generate_hunt_content(cti_content, cti_source_url)
 
             if hunt_body:
                 # 2. Construct the full markdown file
                 final_content = f"# {hunt_id}\n\n"
                 final_content += hunt_body
                 final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
-                if cti_source_url and cti_source_url != "URL not provided":
-                    final_content += f"\n- [Source CTI Report]({cti_source_url})"
 
                 # 3. Save the final file
                 try:
