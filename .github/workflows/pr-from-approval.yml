@@ -23,6 +23,14 @@ jobs:
             const branchName = `draft/issue-${issueNumber}`;
             
             try {
+              // Get the full issue details to ensure we have the user object
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+              });
+              const submitterLogin = issue.user.login;
+
               // Check if the branch exists and has differences from main
               const { data: compareData } = await github.rest.repos.compareCommits({
                 owner: context.repo.owner,
@@ -41,7 +49,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: `🔥 Hunt from Issue #${issueNumber}`,
-                body: `This PR was automatically generated from an approved submission in issue #${issueNumber}.\n- **Submitter**: @${context.issue.user.login}\n- **Source Issue**: #${issueNumber}\n\nCloses #${issueNumber}`,
+                body: `This PR was automatically generated from an approved submission in issue #${issueNumber}.\n- **Submitter**: @${submitterLogin}\n- **Source Issue**: #${issueNumber}\n\nCloses #${issueNumber}`,
                 head: branchName,
                 base: 'main'
               });
@@ -58,7 +66,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
-                assignees: [context.issue.user.login]
+                assignees: [submitterLogin]
               });
               
               core.setOutput('pull-request-number', pr.number);
