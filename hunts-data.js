@@ -634,7 +634,7 @@ const HUNTS_DATA = [
     "id": "M007",
     "category": "Alchemy",
     "title": "Compare text-based features of artifacts (User agent strings, Malware / Executables, Browser Extensions) by encoding them with a text-vectorizer. Vectorization creates a numerical representation of the text-based feature which can then be clustered, or directly compared via a variety of similarity measures.",
-    "tactic": "Command & Control, Execution",
+    "tactic": "Command and Control, Execution",
     "notes": "<ul><li>Data Collection and Preparation: Gather and encode data into numerical formats to support analysis (e.g., text vectorization or image hashing).</br><li>Similarity Analysis: Use similarity metrics (e.g., Levenshtein, cosine, or hash-based) to find related patterns or anomalies.</br><li>Clustering: Apply clustering (e.g., K-means) to group similar items, visualizing patterns and outliers.</br><li>Prioritization and Investigation: Flag clusters or anomalies for deeper analysis, focusing on items of interest or risk.",
     "tags": [
       "T1071.001",
