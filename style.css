@@ -121,11 +121,17 @@ main {
     background-color: #555;
 }
 
-.filter-container {
+.filter-container, .sort-container {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
     margin-bottom: 20px;
+    align-items: flex-end;
+}
+
+.sort-container {
+    justify-content: flex-end;
+    margin-bottom: 10px;
 }
 
 .filter-group {

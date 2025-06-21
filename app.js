@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tagFilter = document.getElementById('tagFilter');
   const huntCount = document.getElementById('huntCount');
   const loadingSection = document.getElementById('loading');
+  const sortHuntsSelect = document.getElementById('sortHunts');
 
   // Create modal for hunt details
   const modal = document.createElement('div');
@@ -193,8 +194,40 @@ document.addEventListener('DOMContentLoaded', () => {
     return card;
   }
 
+  // Sorting logic
+  function sortHunts(hunts) {
+    const sortValue = sortHuntsSelect.value;
+    const [field, direction] = sortValue.split('-');
+
+    return hunts.sort((a, b) => {
+      let valA = a[field];
+      let valB = b[field];
+
+      // Handle numeric sorting for IDs like H001, B002
+      if (field === 'id') {
+        const numA = parseInt(valA.substring(1), 10);
+        const numB = parseInt(valB.substring(1), 10);
+        if (numA !== numB) {
+            return direction === 'asc' ? numA - numB : numB - numA;
+        }
+        // Fallback to letter prefix if numbers are equal
+        valA = valA.charAt(0);
+        valB = valB.charAt(0);
+      }
+
+      let comparison = 0;
+      if (valA > valB) {
+        comparison = 1;
+      } else if (valA < valB) {
+        comparison = -1;
+      }
+
+      return direction === 'desc' ? comparison * -1 : comparison;
+    });
+  }
+
   // Filtering logic
-  function filterHunts() {
+  function filterAndSortHunts() {
     const search = (searchInput.value || '').toLowerCase();
     const category = categoryFilter.value;
     const tactic = tacticFilter.value;
@@ -215,23 +248,26 @@ document.addEventListener('DOMContentLoaded', () => {
       let matchesTag = !tag || (hunt.tags && hunt.tags.includes(tag));
       return matchesSearch && matchesCategory && matchesTactic && matchesTag;
     });
-    renderHunts(filteredHunts);
+
+    const sortedHunts = sortHunts(filteredHunts);
+    renderHunts(sortedHunts);
   }
 
   // Event listeners
-  searchInput.addEventListener('input', filterHunts);
+  searchInput.addEventListener('input', filterAndSortHunts);
   clearSearch.addEventListener('click', () => {
     searchInput.value = '';
-    filterHunts();
+    filterAndSortHunts();
   });
-  categoryFilter.addEventListener('change', filterHunts);
-  tacticFilter.addEventListener('change', filterHunts);
-  tagFilter.addEventListener('change', filterHunts);
+  categoryFilter.addEventListener('change', filterAndSortHunts);
+  tacticFilter.addEventListener('change', filterAndSortHunts);
+  tagFilter.addEventListener('change', filterAndSortHunts);
+  sortHuntsSelect.addEventListener('change', filterAndSortHunts);
 
   // Hide loading, show grid
   loadingSection.style.display = 'none';
   huntsGrid.style.display = 'grid';
 
   // Initial render
-  renderHunts(filteredHunts);
+  filterAndSortHunts();
 }); 
