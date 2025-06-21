@@ -17,33 +17,80 @@
 </head>
 <body>
     <header>
-        <h1>HEARTH</h1>
-        <p>Hunting Exchange and Research Threat Hub</p>
-        <a href="https://github.com/THORCollective/HEARTH" target="_blank">
-        <img src="/Assets/HEARTH-logo.png" alt="HEARTH Logo" width="500"/>
-        </a>
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="Assets/HEARTH-logo.png" alt="HEARTH Logo" class="logo"/>
+                <div class="title-section">
+                    <h1>HEARTH</h1>
+                    <p>Hunting Exchange and Research Threat Hub</p>
+                </div>
+            </div>
+            <div class="header-links">
+                <a href="https://github.com/THORCollective/HEARTH" target="_blank" class="btn">View on GitHub</a>
+            </div>
+        </div>
     </header>
     
     <main>
         <section class="intro">
-            <h2>Welcome to HEARTH</h2>
-            <p>HEARTH is an open-source community-driven database of threat hunting ideas, classified using the PEAK framework.</p>
-            <a href="https://github.com/THORCollective/HEARTH" class="btn">View on GitHub</a>
+            <h2>Threat Hunting Database</h2>
+            <p>Explore curated threat hunting techniques organized using the PEAK framework</p>
         </section>
 
-        <section class="features">
-            <h2>Why HEARTH?</h2>
-            <ul>
-                <li>🔍 Curated threat hunting techniques</li>
-                <li>📂 Organized using the PEAK framework</li>
-                <li>🤝 Community-driven contributions</li>
-                <li>🔥 Stay ahead of adversaries</li>
-            </ul>
+        <section class="controls">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search hunts by title, tactic, tags, or submitter..." class="search-input">
+                <button id="clearSearch" class="clear-btn">Clear</button>
+            </div>
+            
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="categoryFilter">Category:</label>
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="Flames">Flames</option>
+                        <option value="Embers">Embers</option>
+                        <option value="Alchemy">Alchemy</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="tacticFilter">Tactic:</label>
+                    <select id="tacticFilter" class="filter-select">
+                        <option value="">All Tactics</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="tagFilter">Tag:</label>
+                    <select id="tagFilter" class="filter-select">
+                        <option value="">All Tags</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="stats">
+                <span id="huntCount">Loading hunts...</span>
+            </div>
+        </section>
+
+        <section class="hunts-container">
+            <div id="huntsGrid" class="hunts-grid">
+                <!-- Hunts will be loaded here dynamically -->
+            </div>
+        </section>
+
+        <section class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading hunts...</p>
         </section>
     </main>
 
     <footer>
         <p>&copy; 2025 THOR Collective | <a href="https://github.com/THORCollective/HEARTH">GitHub Repository</a></p>
     </footer>
+
+    <script src="hunts-data.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
