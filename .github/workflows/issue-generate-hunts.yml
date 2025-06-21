@@ -1,4 +1,4 @@
-name: "Issue-Driven HEARTH Draft Generation"
+name: "Draft Hunt from Issue"
 
 on:
   issues:
@@ -72,78 +72,29 @@ jobs:
           pip install openai python-dotenv PyPDF2
 
       - name: "Run HEARTH draft generator"
+        id: generate_draft_file
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
         run: python scripts/generate_from_cti.py
 
-      - name: "Comment on issue pending approval"
+      - name: "Commit and push generated hunt"
+        run: |
+          git config --global user.name 'hearthbot'
+          git config --global user.email 'hearthbot@users.noreply.github.com'
+          git checkout -b draft/issue-${{ github.event.issue.number }}
+          git add Flames/*.md
+          git commit -m "feat(draft): Generate hunt from issue #${{ github.event.issue.number }}"
+          git push -u origin draft/issue-${{ github.event.issue.number }}
+
+      - name: "Comment on issue with draft link"
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
             ✅ A new hunt has been drafted from your submission.
-            ⏳ It is now waiting for review and approval before a pull request is created.
-
-      - name: "Upload hunt artifacts"
-        uses: actions/upload-artifact@v4
-        with:
-          name: hunt-draft-issue-${{ github.event.issue.number }}
-          path: |
-            Flames/
-            .hearth/processed-intel-drops/
-
-  create_pr:
-    needs: generate_draft
-    environment: pr-approval
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v4
-      
-      - name: "Download hunt artifacts"
-        uses: actions/download-artifact@v4
-        with:
-          name: hunt-draft-issue-${{ github.event.issue.number }}
-          path: .
-      
-      - name: "Parse Issue Body for PR" # Re-parse to get URLs and author
-        id: parse_issue
-        run: |
-          body="${{ github.event.issue.body }}"
-          source_url=$(echo "$body" | awk -v RS='### Link to Original Source' 'END{print}' | xargs)
-          echo "source_url=$source_url" >> $GITHUB_OUTPUT
-
-      - name: "Create Pull Request"
-        id: create_pr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "feat(hunt): New hunt draft from issue #${{ github.event.issue.number }}"
-          committer: "hearthbot <hearthbot@users.noreply.github.com>"
-          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
-          branch: "hearth/issue-${{ github.event.issue.number }}"
-          delete-branch: true
-          title: "🔥 Hunt Draft from Issue #${{ github.event.issue.number }}"
-          body: |
-            This PR was automatically generated from CTI provided in issue #${{ github.event.issue.number }}.
-            - **Submitter**: @${{ github.event.issue.user.login }}
-            - **Source Issue**: #${{ github.event.issue.number }}
-            - **Source CTI Link**: ${{ steps.parse_issue.outputs.source_url }}
-            Please review the generated hunt below.
-            Closes #${{ github.event.issue.number }}
-          labels: "needs-review, automated-draft"
-          assignees: "${{ github.event.issue.user.login }}"
-
-      - name: "Comment on issue with PR link"
-        if: steps.create_pr.outputs.pull-request-number
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            📄 Your submission has been approved and a draft pull request has been created. Thank you!
-            🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 
+            
+            Please review the generated file here:
+            [**View Hunt Draft**](https://github.com/${{ github.repository }}/blob/draft/issue-${{ github.event.issue.number }}/${{ steps.generate_draft_file.outputs.generated_file_path }})
+            
+            If it looks good, add the `approved` label to this issue to create the pull request. 

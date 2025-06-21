@@ -204,6 +204,10 @@ if __name__ == "__main__":
                     with open(out_md_path, "w") as f:
                         f.write(final_content)
                     print(f"✅ {hunt_id} → {out_md_path}")
+                    # Set output for the GitHub Action
+                    if os.getenv("GITHUB_OUTPUT"):
+                        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                            print(f"generated_file_path={out_md_path}", file=f)
                     
                     # 6. Move the processed intel file
                     dest_path = PROCESSED_DIR / file_path.name

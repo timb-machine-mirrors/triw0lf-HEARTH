@@ -1,0 +1,46 @@
+name: "Create PR from Approved Draft"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  create_pr:
+    if: github.event.label.name == 'approved'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v4
+
+      - name: "Create Pull Request"
+        id: create_pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat(hunt): New hunt from approved issue #${{ github.event.issue.number }}"
+          committer: "hearthbot <hearthbot@users.noreply.github.com>"
+          author: "${{ github.event.issue.user.login }} <${{ github.event.issue.user.login }}@users.noreply.github.com>"
+          branch: "draft/issue-${{ github.event.issue.number }}"
+          base: main
+          delete-branch: true
+          title: "🔥 Hunt from Issue #${{ github.event.issue.number }}"
+          body: |
+            This PR was automatically generated from an approved submission in issue #${{ github.event.issue.number }}.
+            - **Submitter**: @${{ github.event.issue.user.login }}
+            - **Source Issue**: #${{ github.event.issue.number }}
+            Closes #${{ github.event.issue.number }}
+          labels: "needs-review, automated-pr"
+          assignees: "${{ github.event.issue.user.login }}"
+
+      - name: "Comment on issue with PR link"
+        if: steps.create_pr.outputs.pull-request-number
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            🚀 Your submission has been approved and a pull request has been created. Thank you!
+            🔗 **View PR**: #${{ steps.create_pr.outputs.pull-request-number }} 
