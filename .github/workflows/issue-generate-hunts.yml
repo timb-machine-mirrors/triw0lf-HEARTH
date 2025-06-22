@@ -25,13 +25,17 @@ jobs:
         with:
           github-token: ${{secrets.HEARTH_TOKEN}}
           script: |
+            const { data: authenticatedUser } = await github.rest.users.getAuthenticated();
+            const botUsername = authenticatedUser.login;
+            console.log(`Searching for comments by user: ${botUsername}`);
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
             const regenComment = comments.reverse().find(comment => 
-              comment.user.login === 'github-actions[bot]' && /Attempt \d+\/5/.test(comment.body)
+              comment.user.login === botUsername && /Attempt \d+\/5/.test(comment.body)
             );
             let attempt = 0;
             if (regenComment) {
@@ -40,7 +44,7 @@ jobs:
                 attempt = parseInt(match[1], 10);
               }
             }
-            console.log(`Current attempt: ${attempt}`);
+            console.log(`Last attempt was: ${attempt}`);
             core.setOutput('attempt_count', attempt);
       
       - name: "Halt if Max Regenerations Reached"

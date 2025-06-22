@@ -98,42 +98,78 @@ Your output should look like this:
 - [Source CTI Report]({cti_source_url})
 """
 
-def summarize_cti(text, max_length=6000):
-    """Summarize CTI text, with improved handling for large inputs."""
-    if len(text) <= max_length:
+def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
+    """
+    Summarizes long text by splitting it into chunks, summarizing each, 
+    and then creating a final summary of the summaries.
+    This is a 'map-reduce' approach to handle large contexts.
+    """
+    # Estimate token count (very rough approximation)
+    text_token_count = len(text) / 4  
+
+    if text_token_count < max_tokens * 0.7:  # If text is well within the limit
+        print("✅ CTI content is within the context window. No summarization needed.")
         return text
+
+    print(f"⚠️ CTI content is too long ({int(text_token_count)} tokens). Starting map-reduce summarization.")
     
-    # First attempt: Try direct summarization with GPT-3.5-turbo (higher rate limits)
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Using 3.5 for initial summary to avoid rate limits
-            messages=[{"role":"user","content":
-                "Summarize this threat intel for hunting analysis (1000 chars max):\n\n" + text[:4000]  # Limit input size
-            }],
-            temperature=0.2,
-            max_tokens=400  # Reduced token limit
-        )
-        summary = resp.choices[0].message.content.strip()
-        
-        # Second pass with GPT-4 for refinement if needed
+    # 1. Map: Split the document into overlapping chunks
+    chunk_size = int(max_tokens * 0.6) # Use 60% of the model's context for each chunk
+    overlap = int(chunk_size * 0.1) # 10% overlap
+    
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+
+    print(f"Split CTI into {len(chunks)} chunks.")
+
+    # 2. Summarize each chunk
+    chunk_summaries = []
+    for i, chunk in enumerate(chunks):
+        print(f"Summarizing chunk {i+1}/{len(chunks)}...")
         try:
-            resp = client.chat.completions.create(
-                model="gpt-4",
+            response = client.chat.completions.create(
+                model=model,
                 messages=[{"role":"user","content":
-                    "Refine this threat intel summary for hunting analysis (800 chars max):\n\n" + summary
+                    "This is one part of a larger threat intelligence report. "
+                    "Extract the key actionable intelligence from this section. "
+                    "Focus on specific tools, techniques, vulnerabilities, and adversary procedures. "
+                    "Your output will be combined with others, so be concise and clear.\n\n"
+                    f"--- CHUNK {i+1}/{len(chunks)} ---\n\n{chunk}"
                 }],
                 temperature=0.2,
-                max_tokens=300
             )
-            return resp.choices[0].message.content.strip()
+            summary = response.choices[0].message.content.strip()
+            chunk_summaries.append(summary)
         except Exception as e:
-            print(f"Warning: GPT-4 refinement failed, using GPT-3.5 summary instead: {str(e)}")
-            return summary
+            print(f"❌ Error summarizing chunk {i+1}: {e}")
+            # If a chunk fails, we just add a note and continue
+            chunk_summaries.append(f"[Could not summarize chunk {i+1}]")
             
+    # 3. Reduce: Create a final summary from the individual summaries
+    print("Creating final summary of all chunks...")
+    combined_summary = "\n\n---\n\n".join(chunk_summaries)
+    
+    try:
+        final_response = client.chat.completions.create(
+            model=model,
+            messages=[{"role":"user","content":
+                "The following are summaries of different parts of a long threat intelligence report. "
+                "Synthesize them into a single, coherent, and actionable report. "
+                "Remove redundancy and create a clear narrative of the adversary's actions. "
+                "The final output should be a comprehensive summary that can be used to generate a threat hunt.\n\n"
+                f"--- COMBINED SUMMARIES ---\n\n{combined_summary}"
+            }],
+            temperature=0.2,
+        )
+        return final_response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"Warning: Summarization failed: {str(e)}")
-        # Fallback: return truncated text with warning
-        return f"WARNING: Summarization failed. Using truncated text:\n\n{text[:2000]}..."
+        print(f"❌ Error creating final summary: {e}")
+        # Fallback: return the combined summaries if the final step fails
+        return f"WARNING: Final summarization failed. Combined summaries provided below:\n\n{combined_summary}"
 
 def clean_hunt_content(content):
     """Clean up the AI-generated content by removing unwanted parts."""
@@ -169,7 +205,7 @@ def clean_hunt_content(content):
 def generate_hunt_content(cti_text, cti_source_url):
     """Generate just the core content of a hunt from CTI text."""
     try:
-        summary = summarize_cti(cti_text)
+        summary = summarize_cti_with_map_reduce(cti_text)
         prompt = USER_TEMPLATE.format(cti_text=summary, cti_source_url=cti_source_url)
         response = client.chat.completions.create(
             model="gpt-4",
