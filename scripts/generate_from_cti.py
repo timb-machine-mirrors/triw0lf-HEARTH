@@ -175,37 +175,6 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
         # Fallback: return the combined summaries if the final step fails
         return f"WARNING: Final summarization failed. Combined summaries provided below:\n\n{combined_summary}"
 
-def clean_hunt_content(content):
-    """Clean up the AI-generated content by removing unwanted parts."""
-    lines = content.split('\n')
-    cleaned_lines = []
-    skip_until_hypothesis = True
-    
-    for line in lines:
-        # Skip everything until we find the actual hypothesis
-        if skip_until_hypothesis:
-            # Look for lines that start with the hypothesis (not CTI REPORT, not Hypothesis: label)
-            if (line.strip() and 
-                not line.startswith('CTI REPORT:') and 
-                not line.startswith('Hypothesis:') and
-                not line.startswith('---') and
-                not line.startswith('Instructions:') and
-                not line.startswith('Your output should look like this:') and
-                not line.startswith('[Your extremely specific hypothesis]') and
-                not line.startswith('| Hunt #') and
-                not line.startswith('|--------------') and
-                not line.startswith('| [Leave blank]') and
-                not line.startswith('## Why') and
-                not line.startswith('## References')):
-                # This looks like the actual hypothesis
-                skip_until_hypothesis = False
-                cleaned_lines.append(line)
-        else:
-            # We're past the hypothesis, include everything else
-            cleaned_lines.append(line)
-    
-    return '\n'.join(cleaned_lines).strip()
-
 def download_and_extract_text(url):
     """Downloads content from a URL and extracts text."""
     try:
@@ -230,25 +199,40 @@ def download_and_extract_text(url):
         return None
 
 def cleanup_hunt_body(ai_content):
-    """Removes the CTI report and any prepended text from the AI's response."""
-    # Find the start of the actual hunt content, which we expect to be a Markdown heading or table
-    # This is a bit fragile and depends on the model's output format.
+    """
+    Cleans the AI's raw output to ensure it starts with the hypothesis
+    and removes any prepended conversational text or extra headers.
+    """
     lines = ai_content.splitlines()
-    start_index = 0
+    
+    # Find the first line that looks like a real hypothesis.
+    # It should be a non-empty line that doesn't start with a known non-content keyword.
+    first_content_index = -1
     for i, line in enumerate(lines):
-        if line.strip().startswith('| Hunt #') or line.strip().startswith('# Why'):
-            # This is likely the start of the real content. We might need to go back one line for the hypothesis
-            start_index = i - 1 if i > 0 and not lines[i-1].strip().startswith('|') else i
+        stripped_line = line.strip()
+        if not stripped_line:
+            continue
+            
+        # These are keywords we want to strip out if they appear before the hypothesis.
+        is_unwanted_prefix = any(
+            stripped_line.lower().startswith(prefix) for prefix in 
+            ['cti report:', 'hypothesis:', '---', 'instructions:', 'your output should']
+        )
+        
+        if not is_unwanted_prefix:
+            first_content_index = i
             break
             
-    # If we found a start, slice from there. Otherwise, return the whole thing with a warning.
-    if start_index > 0:
-        cleaned_lines = lines[start_index:]
-    else:
-        print("⚠️  Could not find a clear starting point (e.g., '| Hunt #'). The output might contain extra text.")
-        cleaned_lines = lines
+    if first_content_index == -1:
+        print("⚠️ Could not find the start of the hypothesis. Returning raw content.")
+        return ai_content
 
-    return '\n'.join(cleaned_lines).strip()
+    # The hypothesis might have a "Hypothesis:" label. Let's remove that specifically.
+    first_line = lines[first_content_index]
+    if "hypothesis:" in first_line.lower():
+        lines[first_content_index] = first_line.split(':', 1)[-1].strip()
+
+    return "\n".join(lines[first_content_index:]).strip()
 
 def generate_hunt_content(cti_text, cti_source_url, is_regeneration=False):
     """Generate just the core content of a hunt from CTI text."""
@@ -351,12 +335,16 @@ if __name__ == "__main__":
             # 2. Clean up the AI's output
             cleaned_body = cleanup_hunt_body(hunt_body)
 
-            # 3. Save the hunt file
+            # 3. Construct the final markdown content
+            final_content = f"# {hunt_id}\n\n"
+            final_content += cleaned_body.replace("| [Leave blank] |", f"| {hunt_id}    |")
+
+            # 4. Save the hunt file
             with open(out_md_path, "w") as f:
-                f.write(cleaned_body)
+                f.write(final_content)
             print(f"✅ Successfully wrote hunt to {out_md_path}")
             
-            # 4. Set the output for the GitHub Action
+            # 5. Set the output for the GitHub Action
             if 'GITHUB_OUTPUT' in os.environ:
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     print(f'HUNT_FILE_PATH={out_md_path}', file=f)
