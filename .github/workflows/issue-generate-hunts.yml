@@ -89,15 +89,17 @@ jobs:
           # Parse the content from the file instead of direct substitution
           file_url=$(grep -o 'https://github.com/.*/files/[0-9]*/.*' /tmp/issue_body.txt | head -n 1)
           
-          # Parse the source URL from the issue body - it could be in different formats
-          source_url=""
-          # Try to find URL after "Link to Original Source" label
-          source_url=$(grep -A 1 "Link to Original Source" /tmp/issue_body.txt | tail -n 1 | xargs)
-          # If that didn't work, try to find any URL in the body
-          if [ -z "$source_url" ] || [ "$source_url" = "Link to Original Source" ]; then
-            source_url=$(grep -o 'https://[^[:space:]]*' /tmp/issue_body.txt | head -n 1)
-          fi
+          # Parse the source URL from the issue body
+          source_url=$(awk 'f{if(NF){print;f=0}} /### Link to Original Source/{f=1}' /tmp/issue_body.txt | xargs)
           
+          # Parse submitter details
+          submitter_name=$(awk 'f{if(NF){print;f=0}} /### Your Name \/ Handle/{f=1}' /tmp/issue_body.txt | xargs)
+          profile_link=$(awk 'f{if(NF){print;f=0}} /### Link to Profile \(Optional\)/{f=1}' /tmp/issue_body.txt | xargs)
+          
+          if [ -z "$submitter_name" ]; then
+            submitter_name="A Helpful Contributor"
+          fi
+
           raw_cti=""
           if [ -z "$file_url" ]; then
             # Extract CTI content between the markers
@@ -107,6 +109,8 @@ jobs:
           
           echo "file_url=$file_url" >> $GITHUB_OUTPUT
           echo "source_url=$source_url" >> $GITHUB_OUTPUT
+          echo "submitter_name=$submitter_name" >> $GITHUB_OUTPUT
+          echo "profile_link=$profile_link" >> $GITHUB_OUTPUT
           echo "raw_cti<<EOF" >> $GITHUB_OUTPUT
           echo "$raw_cti" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -150,6 +154,8 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
           EXISTING_HUNT_FILE: ${{ steps.find_hunt.outputs.hunt_file_path }}
+          SUBMITTER_NAME: ${{ steps.parse_issue.outputs.submitter_name }}
+          PROFILE_LINK: ${{ steps.parse_issue.outputs.profile_link }}
         run: python scripts/generate_from_cti.py
 
       - name: "Commit and push generated hunt"
