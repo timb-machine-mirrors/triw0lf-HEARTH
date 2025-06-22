@@ -5,6 +5,10 @@ from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import io
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -66,7 +70,7 @@ Examples of GOOD (narrow) hypotheses:
 ✅ "Attackers are creating scheduled tasks with random 8-character alphanumeric names to execute Base64-encoded PowerShell commands at system startup"
 """
 
-USER_TEMPLATE = """CTI REPORT:
+USER_TEMPLATE = """{regeneration_instruction}CTI REPORT:
 
 {cti_text}
 
@@ -202,18 +206,79 @@ def clean_hunt_content(content):
     
     return '\n'.join(cleaned_lines).strip()
 
-def generate_hunt_content(cti_text, cti_source_url):
+def download_and_extract_text(url):
+    """Downloads content from a URL and extracts text."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+
+        if 'application/pdf' in response.headers.get('Content-Type', ''):
+            pdf_reader = PdfReader(io.BytesIO(response.content))
+            return "".join(page.extract_text() for page in pdf_reader.pages)
+        else:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            # Basic text extraction, can be improved
+            for script in soup(["script", "style"]):
+                script.extract()
+            return " ".join(soup.stripped_strings)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error downloading URL {url}: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ Error processing URL {url}: {e}")
+        return None
+
+def cleanup_hunt_body(ai_content):
+    """Removes the CTI report and any prepended text from the AI's response."""
+    # Find the start of the actual hunt content, which we expect to be a Markdown heading or table
+    # This is a bit fragile and depends on the model's output format.
+    lines = ai_content.splitlines()
+    start_index = 0
+    for i, line in enumerate(lines):
+        if line.strip().startswith('| Hunt #') or line.strip().startswith('# Why'):
+            # This is likely the start of the real content. We might need to go back one line for the hypothesis
+            start_index = i - 1 if i > 0 and not lines[i-1].strip().startswith('|') else i
+            break
+            
+    # If we found a start, slice from there. Otherwise, return the whole thing with a warning.
+    if start_index > 0:
+        cleaned_lines = lines[start_index:]
+    else:
+        print("⚠️  Could not find a clear starting point (e.g., '| Hunt #'). The output might contain extra text.")
+        cleaned_lines = lines
+
+    return '\n'.join(cleaned_lines).strip()
+
+def generate_hunt_content(cti_text, cti_source_url, is_regeneration=False):
     """Generate just the core content of a hunt from CTI text."""
     try:
         print("Starting CTI summarization...")
         summary = summarize_cti_with_map_reduce(cti_text)
         print("CTI summarization complete.")
-        prompt = USER_TEMPLATE.format(cti_text=summary, cti_source_url=cti_source_url)
+        
+        regeneration_instruction = ""
+        temperature = 0.2
+        if is_regeneration:
+            print("🔄 This is a regeneration. Requesting a new hypothesis.")
+            regeneration_instruction = (
+                "IMPORTANT: The previous attempt to generate a hunt from this CTI was not satisfactory. "
+                "Your task is to generate a NEW and DIFFERENT hunt hypothesis. "
+                "Analyze the CTI report again and focus on a different technique, a more specific behavior, "
+                "or a unique, actionable aspect that was missed before. Do not repeat the previous hypothesis.\n\n"
+            )
+            temperature = 0.7
+
+        prompt = USER_TEMPLATE.format(
+            regeneration_instruction=regeneration_instruction,
+            cti_text=summary, 
+            cti_source_url=cti_source_url
+        )
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role":"system","content":SYSTEM_PROMPT},
                      {"role":"user","content":prompt}],
-            temperature=0.2,
+            temperature=temperature,
             max_tokens=800
         )
         return response.choices[0].message.content.strip()
@@ -242,58 +307,52 @@ def read_file_content(file_path):
 
 if __name__ == "__main__":
     existing_hunt_path = os.getenv("EXISTING_HUNT_FILE")
+    is_regeneration = bool(existing_hunt_path)
     
     if existing_hunt_path:
         out_md_path = Path(existing_hunt_path)
         hunt_id = out_md_path.stem
         print(f"🔄 Regenerating hunt for {hunt_id} at {out_md_path}")
     else:
-        next_hunt_number = get_next_hunt_id()
-        hunt_id = f"H-2025-{next_hunt_number:03d}"
-        out_md_path = OUTPUT_DIR / f"{hunt_id}.md"
-        print(f"✨ Generating new hunt {hunt_id} at {out_md_path}")
-
-    cti_source_url = os.getenv("CTI_SOURCE_URL", "URL not provided")
-    files_to_process = list(CTI_INPUT_DIR.glob("*.[tp][dx][tf]"))
-
-    # Since this script runs per-issue, we only expect one file.
-    if files_to_process:
-        file_path = files_to_process[0]
-        cti_content = read_file_content(file_path)
-        
-        if cti_content:
-            # 1. Generate the core hunt content from the AI
-            hunt_body = generate_hunt_content(cti_content, cti_source_url)
-
-            if hunt_body:
-                # 2. Clean up the AI-generated content
-                cleaned_hunt_body = clean_hunt_content(hunt_body)
-                
-                # 3. Construct the full markdown file
-                final_content = f"# {hunt_id}\n\n"
-                final_content += cleaned_hunt_body
-                final_content = final_content.replace("| [Leave blank] |", f"| {hunt_id}    |")
-
-                # 4. Save the final file
-                try:
-                    with open(out_md_path, "w") as f:
-                        f.write(final_content)
-                    print(f"✅ {hunt_id} → {out_md_path}")
-                    if os.getenv("GITHUB_OUTPUT"):
-                        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                            print(f"generated_file_path={out_md_path}", file=f)
-                    
-                    # 5. Move the processed intel file if it's a new hunt
-                    if not existing_hunt_path:
-                        dest_path = PROCESSED_DIR / file_path.name
-                        file_path.rename(dest_path)
-                        print(f"✅ Moved {file_path.name} to {PROCESSED_DIR.name}")
-
-                except Exception as e:
-                    print(f"❌ Could not write file or move intel: {e}")
-            else:
-                print(f"❌ Failed to generate hunt content for {file_path.name}")
+        # Determine the next hunt number
+        hunt_files = list(Path(".").glob("Flames/H*.md"))
+        if hunt_files:
+            max_hunt_num = max([int(f.stem.split('-')[-1]) for f in hunt_files if f.stem.split('-')[-1].isdigit()])
+            next_hunt_num = max_hunt_num + 1
         else:
-            print(f"❌ Skipping {file_path} due to reading errors")
+            next_hunt_num = 1
+        
+        year = datetime.now().year
+        hunt_id = f"H-{year}-{next_hunt_num:03d}"
+        out_md_path = Path(f"Flames/{hunt_id}.md")
+        print(f"🌱 Generating new hunt: {hunt_id}")
+
+    cti_source_url = os.getenv("CTI_SOURCE_URL")
+    if not cti_source_url:
+        raise ValueError("❌ CTI_SOURCE_URL environment variable not set.")
+
+    # Get CTI content
+    cti_content = download_and_extract_text(cti_source_url)
+
+    if cti_content:
+        # 1. Generate the core hunt content from the AI
+        hunt_body = generate_hunt_content(cti_content, cti_source_url, is_regeneration=is_regeneration)
+
+        if hunt_body:
+            # 2. Clean up the AI's output
+            cleaned_body = cleanup_hunt_body(hunt_body)
+
+            # 3. Save the hunt file
+            with open(out_md_path, "w") as f:
+                f.write(cleaned_body)
+            print(f"✅ Successfully wrote hunt to {out_md_path}")
+            
+            # 4. Set the output for the GitHub Action
+            if 'GITHUB_OUTPUT' in os.environ:
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    print(f'HUNT_FILE_PATH={out_md_path}', file=f)
+                    print(f'HUNT_ID={hunt_id}', file=f)
+        else:
+            print(f"Could not generate hunt content. Skipping file creation.")
     else:
-        print("🤷 No CTI files found to process.") 
+        print(f"Could not retrieve CTI content. Skipping hunt generation.") 
