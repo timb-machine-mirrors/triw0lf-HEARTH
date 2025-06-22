@@ -537,6 +537,25 @@ const HUNTS_DATA = [
     "file_path": "Flames/H020.md"
   },
   {
+    "id": "H021",
+    "category": "Flames",
+    "title": "Threat actors are using the undocumented Windows Security Center (WSC) APIs to register a fabricated antivirus product, effectively disabling Windows Defender and creating an environment conducive for subsequent malware deployment and execution.",
+    "tactic": "Defense Evasion",
+    "notes": "Based on ATT&CK technique T1562.001, using the undocumented Windows Security Center (WSC) APIs",
+    "tags": [
+      "defenseevasion",
+      "t1562.001",
+      "WSC"
+    ],
+    "submitter": {
+      "name": "hearth-auto-intel",
+      "link": "https://github.com/THORCollective/HEARTH"
+    },
+    "why": "- Detecting this behavior is crucial as it allows threat actors to disable Windows Defender, one of the primary security solutions on Windows systems, thereby significantly lowering the barrier for subsequent malware deployment and execution.\n- If successful, this technique can lead to a compromised system, data breaches, and potential lateral movement within the network.\n- This technique has been associated with the tool \"defendnot\", which represents a sophisticated approach to bypassing Windows Defender.",
+    "references": "- [MITRE ATT&CK T1562.001](https://attack.mitre.org/techniques/T1562/001/)\n- [Source CTI Report](https://www.huntress.com/blog/defendnot-detecting-malicious-security-product-bypass-techniques)",
+    "file_path": "Flames/H021.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
