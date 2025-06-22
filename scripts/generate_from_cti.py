@@ -317,8 +317,17 @@ if __name__ == "__main__":
         # Determine the next hunt number
         hunt_files = list(Path(".").glob("Flames/H*.md"))
         if hunt_files:
-            max_hunt_num = max([int(f.stem.split('-')[-1]) for f in hunt_files if f.stem.split('-')[-1].isdigit()])
-            next_hunt_num = max_hunt_num + 1
+            # Filter files that have the expected format and extract numbers
+            hunt_numbers = []
+            for f in hunt_files:
+                parts = f.stem.split('-')
+                if len(parts) >= 3 and parts[-1].isdigit():
+                    hunt_numbers.append(int(parts[-1]))
+            
+            if hunt_numbers:
+                next_hunt_num = max(hunt_numbers) + 1
+            else:
+                next_hunt_num = 1
         else:
             next_hunt_num = 1
         
