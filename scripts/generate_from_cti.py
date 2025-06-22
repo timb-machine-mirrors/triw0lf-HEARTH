@@ -205,7 +205,9 @@ def clean_hunt_content(content):
 def generate_hunt_content(cti_text, cti_source_url):
     """Generate just the core content of a hunt from CTI text."""
     try:
+        print("Starting CTI summarization...")
         summary = summarize_cti_with_map_reduce(cti_text)
+        print("CTI summarization complete.")
         prompt = USER_TEMPLATE.format(cti_text=summary, cti_source_url=cti_source_url)
         response = client.chat.completions.create(
             model="gpt-4",
@@ -294,4 +296,4 @@ if __name__ == "__main__":
         else:
             print(f"❌ Skipping {file_path} due to reading errors")
     else:
-        print("🤷 No CTI files found to process.")
+        print("🤷 No CTI files found to process.") 
