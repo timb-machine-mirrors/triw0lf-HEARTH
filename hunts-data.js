@@ -518,6 +518,25 @@ const HUNTS_DATA = [
     "file_path": "Flames/H019.md"
   },
   {
+    "id": "H020",
+    "category": "Flames",
+    "title": "Threat actors are using the Windows Management Instrumentation (WMI) system to execute PowerShell commands that establish a reverse shell, allowing them to gain remote control over Windows servers in the financial sector.",
+    "tactic": "Execution",
+    "notes": "Based on ATT&CK technique T1047, using WMI for execution of PowerShell commands.",
+    "tags": [
+      "Execution",
+      "T1047",
+      "WMI"
+    ],
+    "submitter": {
+      "name": "hearth-auto-intel",
+      "link": "https://github.com/THORCollective/HEARTH"
+    },
+    "why": "- Detecting this behavior is crucial as it allows threat actors to gain control over critical systems, potentially leading to data theft, system disruption, or further lateral movement within the network.\n- If successful, the threat actors can manipulate the compromised system to their advantage, potentially leading to significant financial and reputational damage for the targeted organization.\n- This technique has been linked to larger campaigns targeting the financial sector, indicating a strategic focus on high-value targets.",
+    "references": "- [MITRE ATT&CK T1047](https://attack.mitre.org/techniques/T1047/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H020.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
