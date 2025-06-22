@@ -22,7 +22,7 @@ USER_TEMPLATE = """A user has submitted the following hunt details from the 'ðŸ”
 **Hunt Type:** {hunt_type}
 **Hypothesis:** {hypothesis}
 **Tactic:** {tactic}
-**Notes:** {notes}
+**Implementation Notes:** {notes}
 **Tags:** {tags}
 **Why it's important:** {why}
 **References:** {references}
@@ -31,23 +31,24 @@ USER_TEMPLATE = """A user has submitted the following hunt details from the 'ðŸ”
 
 Instructions:
 1.  Use the Hypothesis as the main "Idea / Hypothesis" in the table and as the first line of the file.
-2.  Use the Tactic provided.
-3.  Use the 'Implementation Notes' as the 'Notes' in the table.
-4.  Use the 'Search Tags' as the 'Tags' in the table.
-5.  Use the 'HEARTH Crafter' as the 'Submitter' in the table.
-6.  Populate the "Why" and "References" sections with the content provided.
-7.  The final output MUST start with the hypothesis text, followed by the markdown table and the other sections.
+2.  For the `Notes` column in the table, write a brief, one-sentence summary of the 'Implementation Notes' provided.
+3.  Create a new `## Implementation Notes` section after the `## Why` section and place the full, original 'Implementation Notes' there.
+4.  Populate all other fields and sections using the provided data.
+5.  The final output MUST start with the hypothesis text, followed by the markdown table and the other sections.
 
 The final markdown file content should look like this:
 
 [The user's hypothesis]
 
-| Hunt #       | Idea / Hypothesis          | Tactic    | Notes     | Tags      | Submitter |
-|--------------|----------------------------|-----------|-----------|-----------|-----------|
-| [Leave blank] | [The user's hypothesis]    | {tactic}  | {notes}   | {tags}    | {submitter} |
+| Hunt #       | Idea / Hypothesis          | Tactic    | Notes                             | Tags      | Submitter |
+|--------------|----------------------------|-----------|-----------------------------------|-----------|-----------|
+| [Leave blank] | [The user's hypothesis]    | {tactic}  | [A one-sentence summary of notes] | {tags}    | {submitter} |
 
 ## Why
 {why}
+
+## Implementation Notes
+{notes}
 
 ## References
 {references}
@@ -89,7 +90,7 @@ def generate_hunt_file(details):
         hunt_type=details.get('hunt_type', 'Flames'),
         hypothesis=details.get('hypothesis', ''),
         tactic=details.get('tactic', ''),
-        notes=details.get('notes', ''),
+        notes=details.get('notes', 'N/A'),
         tags=details.get('tags', ''),
         why=details.get('why', ''),
         references=details.get('references', ''),
