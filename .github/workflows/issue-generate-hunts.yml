@@ -65,6 +65,16 @@ jobs:
         id: next_attempt
         run: echo "attempt_number=$((${{ steps.check_regen.outputs.attempt_count || 0 }} + 1))" >> $GITHUB_OUTPUT
       
+      - name: "Set up Python 3"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: "Install Python dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 PyPDF2 python-docx openai python-dotenv
+
       - name: "Setup Git Branch"
         run: |
           if [ "${{ github.event.label.name }}" == "regenerate" ]; then
@@ -118,6 +128,7 @@ jobs:
           
           file_url="${{ steps.parse_issue.outputs.file_url }}"
           cti_file="${{ steps.parse_issue.outputs.cti_file }}"
+          source_url="${{ steps.parse_issue.outputs.source_url }}"
 
           if [ -n "$file_url" ]; then
             echo "Downloading CTI file from URL..."
@@ -128,20 +139,22 @@ jobs:
             echo "Using downloaded CTI file: $cti_file"
             # The file is already downloaded and ready to use
             cp "$cti_file" ".hearth/intel-drops/source_cti.txt"
+          elif [ -n "$source_url" ]; then
+            echo "CTI file not found, downloading from source URL: $source_url"
+            # Fallback: download the content directly in this workflow
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ISSUE_NUMBER=${{ github.event.issue.number }} ISSUE_BODY="${{ github.event.issue.body }}" python .github/scripts/process_issue.py
+            # Check if the download was successful
+            if [ -f "$cti_file" ]; then
+              echo "Successfully downloaded CTI content"
+              cp "$cti_file" ".hearth/intel-drops/source_cti.txt"
+            else
+              echo "Failed to download CTI content from source URL"
+              exit 1
+            fi
           else
             echo "No CTI content found."
             exit 1
           fi
-
-      - name: "Set up Python 3"
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: "Install dependencies"
-        run: |
-          python -m pip install --upgrade pip
-          pip install openai python-dotenv PyPDF2 requests beautifulsoup4
 
       - name: "Run HEARTH draft generator"
         id: generate_draft_file
