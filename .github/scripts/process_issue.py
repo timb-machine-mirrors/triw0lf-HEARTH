@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import PyPDF2
 import docx
 import io
+from pathlib import Path
 
 def get_cti_content(url):
     """
@@ -36,6 +37,28 @@ def get_cti_content(url):
         return f"Error fetching URL: {e}"
     except Exception as e:
         return f"Error processing content: {e}"
+
+def save_cti_content_to_file(content, issue_number):
+    """
+    Saves the CTI content to a file in the .hearth/intel-drops directory.
+    """
+    try:
+        # Create the directory if it doesn't exist
+        intel_drops_dir = Path(".hearth/intel-drops")
+        intel_drops_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save the content to a file
+        filename = f"issue-{issue_number}-cti.txt"
+        file_path = intel_drops_dir / filename
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"✅ Successfully saved CTI content to {file_path}")
+        return str(file_path)
+    except Exception as e:
+        print(f"❌ Error saving CTI content to file: {e}")
+        return None
 
 def update_github_issue(issue_number, new_body):
     """
@@ -77,19 +100,29 @@ def main():
     cti_url = url_match.group(1).strip()
     print(f"Processing CTI link: {cti_url}")
 
-    # Check if the content has already been added
+    # Check if the content has already been processed
     if "*(This will be processed automatically by our system. Please leave this section as is.)*" not in issue_body:
         print("Content already processed. Skipping.")
         return
 
+    # Download the full content
+    print("Downloading CTI content from URL...")
     content = get_cti_content(cti_url)
     
     if "Error" in content:
-        final_content = f"### CTI Content\n\nFailed to retrieve or process content from the URL.\n\n**Details:**\n```\n{content}\n```"
+        final_content = f"### CTI Content\n\n❌ **Failed to retrieve or process content from the URL.**\n\n**Details:**\n```\n{content}\n```\n\n*Please check the URL and try again, or paste the content manually.*"
     else:
-        final_content = f"### CTI Content\n\n```\n{content[:15000]}\n```\n*Content was automatically extracted from the source.*"
+        # Save the full content to a file
+        file_path = save_cti_content_to_file(content, issue_number)
+        
+        if file_path:
+            # Update the issue body to indicate successful download
+            content_preview = content[:500] + "..." if len(content) > 500 else content
+            final_content = f"### CTI Content\n\n✅ **Content successfully downloaded and saved to file.**\n\n**Content Preview:**\n```\n{content_preview}\n```\n\n**Full content length:** {len(content):,} characters\n**Saved to:** `{file_path}`\n\n*The full content has been downloaded and will be processed automatically.*"
+        else:
+            final_content = f"### CTI Content\n\n❌ **Failed to save content to file.**\n\n**Content Preview:**\n```\n{content[:1000]}...\n```\n\n*Please try again or contact an administrator.*"
     
-    # Replace the placeholder text with the fetched content
+    # Replace the placeholder text with the status update
     new_issue_body = re.sub(
         r'### CTI Content\s*\n\s*\*\(This will be processed automatically by our system\. Please leave this section as is\.\)\*',
         final_content,
