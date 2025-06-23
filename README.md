@@ -1,106 +1,115 @@
-# 🔥 Hunting Exchange And Research Threat Hub (HEARTH) 🔥
-
-<img src="/Assets/HEARTH-logo.png" alt="HEARTH Logo" width="500"/>
-
-A community-driven repository for threat hunting ideas, methodologies, and research that serves as a central gathering place for hunters to share knowledge, collaborate on techniques, and advance the field of threat hunting.
-
-HEARTH incorporates ideas for **three distinct types** of hunts classified by the [PEAK Threat Hunting Framework](https://www.splunk.com/en_us/blog/security/peak-threat-hunting-framework.html):
-- **Flames**: Hypothesis-driven investigations with clear, testable hypotheses
-- **Embers**: Environment baselining and exploratory analysis
-- **Alchemy**: Model-assisted and algorithmic approaches to threat detection
-
-## 🔥 Why 
-Generating effective hypotheses and ideas for threat hunting is hard. HEARTH provides a collaborative environment where hunters can share, develop, and refine their methodologies while building a comprehensive knowledge base for the security community.
-
-## 🔥 Goals 
-- Encourage collaboration
-- Inspire threat hunters with practical and theoretical hunting ideas
-
-## 🔥 Repository Structure
-
-```
-HEARTH/
-├── Flames/              # Hypothesis-Driven hunts
-├── Embers/              # Baseline Analysis
-├── Alchemy/             # Model-Assisted & Algorithmic Hunting
-├── Forge/               # Development space
-├── Kindling/            # Resources & Templates
-├── Keepers/             # Guidelines & Standards
-└── Assets/              # Images & Logos
-```
-
-## 🔥 How to Contribute to HEARTH 
-
-We welcome contributions to the Hunting Exchange And Research Threat Hub! Contributing is simple:
-
-### 🔥 Submit a Hunt Idea
-
-We welcome contributions from all threat hunters! You can submit a hunt in two ways:
-
-**Option 1: Automated CTI Submission (Recommended)**
-1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
-2. Select "🔥 HEARTH CTI Submission"
-3. Fill out the required information about your hunt (paste CTI, upload a file, and/or provide a source link)
-4. Submit for review
-
-**Option 2: Manual Hunt Submission**
-1. Go to [Submit New Issue](https://github.com/THORCollective/HEARTH/issues/new/choose)
-2. Select "🔥 HEARTH - Hunt Submission Form"
-3. Fill out the hunt template with your hypothesis, reasoning, and references
-4. Submit for review
-
-> See our [Contribution Guidelines](/Keepers/CONTRIBUTING.md) for detailed instructions and requirements.
-
-> [!IMPORTANT] 
-> Approved HEARTH Hunt submissions receive an official hunt number, community recognition, and integration into the HEARTH repository.
-
-## 🔥 Other Contributions
-
-### 🔨 The Forge
-Got a half-baked idea or something that needs work? Submit it to **The Forge**, where we collect and refine early-stage threat hunting ideas for all hunt types.
-
-- Browse [The Forge](/Forge/Forge.md)
-- Contribute using the [Forge - Early Stage Hunt Idea form](https://github.com/THORCollective/HEARTH/issues/new/choose)
-
-### 🧯 Have feedback or suggestions?
-Use our standard [HEARTH Issue Template](https://github.com/THORCollective/HEARTH/issues/new/choose) for:
-- Bug reports
-- Feature requests
-- General feedback
-
-## 🔥 Community Roles
-
-### HEARTH Keepers
-Repository maintainers and reviewers who:
-- Review submissions
-- Maintain quality standards
-- Guide community development
-- Facilitate collaboration
-
-### HEARTH Crafters
-Regular contributors who:
-- Submit hunt ideas
-- Participate in reviews
-- Support the community
-- Share knowledge
-
-### HEARTH Apprentices
-New members who:
-- Learn methodologies
-- Make initial contributions (see [the Forge](/Forge/Forge.md))
-- Engage with community
-
-### Additional Resources
-- **🪵 [Resources Guide](/Kindling/Resources.md)**: A curated collection of threat intelligence sources, security blogs, research papers, and tools to help generate and refine hunt ideas.
-- **[Hunt Generation Template](/Kindling/Hunt-Generation.md)**: Once you've got your idea, use this to plan out your hunt in detail.
-- **[Hunt Review Template](/Kindling/Hunt-Review.md)**: After your hunt, use this to capture all key findings and ensure nothing is missed when sharing your results.
-
-## Made with 🔥 by the HEARTH team: 
-Lauren 🤠 x:[@jotunvillur](https://x.com/jotunvillur) / LI:[Lauren Proehl](https://www.linkedin.com/in/laurenproehl/)  
-Sydney 🏋️‍♀️ x:[@letswastetime](https://x.com/letswastetime) / LI:[Sydney Marrone](https://www.linkedin.com/in/sydneymarrone/)  
-John :skull: x:[@AngryInfoSecGuy](https://x.com/AngryInfoSecGuy) / LI:[John Grageda](https://www.linkedin.com/in/johngrageda/)
+<p align="center">
+  <img src="https://github.com/THORCollective/HEARTH/blob/main/Assets/HEARTH-logo.png?raw=true" alt="HEARTH Logo" width="200"/>
+  <h1 align="center">🔥 HEARTH: The Hunting Exchange and Research Threat Hub 🔥</h1>
+  <p align="center">
+    A community-driven, AI-powered exchange for threat hunting ideas and methodologies.
+    <br />
+    <a href="https://thorcollective.github.io/HEARTH/"><strong>Explore the Live Database »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/THORCollective/HEARTH/issues/new/choose">Submit a Hunt</a>
+    ·
+    <a href="https://github.com/THORCollective/HEARTH/issues">Report a Bug</a>
+    ·
+    <a href="https://github.com/THORCollective/HEARTH/issues">Request a Feature</a>
+  </p>
+</p>
 
 ---
+
+## 📖 About The Project
+
+**HEARTH** (Hunting Exchange and Research Threat Hub) is a centralized, open-source platform for security professionals to share, discover, and collaborate on threat hunting hypotheses. Generating effective and timely hunts is a major challenge, and HEARTH aims to solve it by building a comprehensive, community-curated knowledge base.
+
+Our goal is to create a vibrant ecosystem where hunters can:
+- **Discover** new and creative hunting ideas.
+- **Contribute** their own research and CTI.
+- **Collaborate** with others to refine and improve detection strategies.
+- **Automate** the mundane parts of hunt creation and focus on what matters.
+
+This project uses the **[PEAK Threat Hunting Framework](https://www.splunk.com/en_us/blog/security/peak-threat-hunting-framework.html)** to categorize hunts into three types:
+- **🔥 Flames**: Hypothesis-driven hunts with clear, testable objectives.
+- **🪵 Embers**: Baselining and exploratory analysis to understand an environment.
+- **🔮 Alchemy**: Model-assisted and algorithmic approaches to threat detection.
+
+---
+
+## ✨ Key Features
+
+HEARTH is more than just a list of hunts; it's a fully-featured platform with a sophisticated automation backend.
+
+| Feature | Description |
+| :--- | :--- |
+| **🔍 Interactive UI** | A searchable, filterable, and sortable database of all hunts, making it easy to find exactly what you're looking for. |
+| **🤖 AI-Powered CTI Analysis** | Submit a link to a CTI report, and our system uses **GPT-4** to automatically read, analyze, and draft a complete hunt hypothesis for you. |
+| **🛡️ Duplicate Detection** | An AI-powered system analyzes new submissions against the existing database to flag potential duplicates and ensure content quality. |
+| **⚙️ Automated Workflows** | GitHub Actions manage the entire lifecycle of a submission, from initial draft to final approval, including creating branches and PRs. |
+| **🏆 Contributor Leaderboard** | We recognize and celebrate our contributors! An automated system tracks submissions and maintains a public [leaderboard](/Keepers/Contributors.md). |
+| **✅ Review & Regeneration Loop** | Maintainers can request a new version of an AI-generated hunt by simply adding a `regenerate` label to the submission issue. |
+
+---
+
+## 🚀 How to Contribute
+
+Contributing to HEARTH is designed to be as easy as possible. We use GitHub Issues as a streamlined submission hub.
+
+### **Option 1: Automated CTI Submission (Recommended)**
+
+Have a link to a great threat intelligence report, blog post, or whitepaper? Let our AI do the heavy lifting.
+
+1.  **[Click here to open a CTI Submission issue](https://github.com/THORCollective/HEARTH/issues/new?assignees=&labels=intel-submission%2C+needs-triage&template=cti_submission.yml&title=%5BCTI%5D+Brief+Description+of+Threat+Intel)**.
+2.  Paste the **URL to the CTI source** and provide your name/handle for attribution.
+3.  Submit the issue. Our bot will:
+    -   Read and analyze the content.
+    -   Generate a complete hunt draft.
+    -   Check for duplicates.
+    -   Post the draft in a new branch and comment on your issue with a link for review.
+
+### **Option 2: Manual Hunt Submission**
+
+If you have a fully-formed hunt idea of your own, you can submit it manually.
+
+1.  **[Click here to open a Manual Hunt Submission issue](https://github.com/THORCollective/HEARTH/issues/new?assignees=&labels=manual-submission%2C+needs-triage&template=hunt_submission_form.yml&title=%5BHunt%5D+Brief+Description+of+Hunt+Idea)**.
+2.  Fill out the template with your hypothesis, tactic, references, and other details.
+3.  Submit the issue for review by the maintainers.
+
+> [!IMPORTANT]
+> All approved submissions are integrated into the HEARTH database and credited to the submitter on our **[Contributors Leaderboard](/Keepers/Contributors.md)**.
+
+---
+
+## 🛠️ Built With
+
+HEARTH combines a simple frontend with a powerful, serverless backend built on GitHub Actions.
+
+*   **Frontend**:
+    *   HTML5
+    *   CSS3
+    *   Vanilla JavaScript
+*   **Backend & Automation**:
+    *   GitHub Actions
+    *   Python
+    *   OpenAI API (GPT-4)
+*   **Hosting**:
+    *   GitHub Pages
+
+---
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## ❤️ Acknowledgements
+
+This project is made possible by the security community and our amazing contributors.
+
+**Project Maintainers:**
+- Lauren Proehl ([@jotunvillur](https://x.com/jotunvillur))
+- Sydney Marrone ([@letswastetime](https://x.com/letswastetime))
+- John Grageda ([@AngryInfoSecGuy](https://x.com/AngryInfoSecGuy))
+
 <p align="center">
   🔥 **Keep the HEARTH burning!** 🔥
 </p>
