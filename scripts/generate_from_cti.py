@@ -181,30 +181,7 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
     except Exception as e:
         print(f"❌ Error creating final summary: {e}")
         # Fallback: return the combined summaries if the final step fails
-        return f"WARNING: Final summarization failed. Combined summaries provided below:\n\n{combined_summary}"
-
-def download_and_extract_text(url):
-    """Downloads content from a URL and extracts text."""
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-
-        if 'application/pdf' in response.headers.get('Content-Type', ''):
-            pdf_reader = PdfReader(io.BytesIO(response.content))
-            return "".join(page.extract_text() for page in pdf_reader.pages)
-        else:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            # Basic text extraction, can be improved
-            for script in soup(["script", "style"]):
-                script.extract()
-            return " ".join(soup.stripped_strings)
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error downloading URL {url}: {e}")
-        return None
-    except Exception as e:
-        print(f"❌ Error processing URL {url}: {e}")
-        return None
+        return f"WARNING: Final summarization failed. Combined summaries provided below:\\n\\n{combined_summary}"
 
 def cleanup_hunt_body(ai_content):
     """
@@ -331,10 +308,18 @@ if __name__ == "__main__":
 
     cti_source_url = os.getenv("CTI_SOURCE_URL")
     if not cti_source_url:
-        raise ValueError("❌ CTI_SOURCE_URL environment variable not set.")
+        # For programmatic submissions, this URL is still required for the references section.
+        print("⚠️ CTI_SOURCE_URL not found, reference link will be empty.")
+        cti_source_url = ""
 
-    # Get CTI content
-    cti_content = download_and_extract_text(cti_source_url)
+    # SECURELY get CTI content from the file prepared by the workflow
+    cti_files = list(CTI_INPUT_DIR.glob("*"))
+    if not cti_files:
+        raise FileNotFoundError(f"❌ No CTI file found in the input directory '{CTI_INPUT_DIR}'.")
+    
+    cti_file_path = cti_files[0]
+    print(f"📄 Processing CTI file: {cti_file_path}")
+    cti_content = read_file_content(cti_file_path)
 
     # Get submitter info
     submitter_name = os.getenv("SUBMITTER_NAME", "hearth-auto-intel")
