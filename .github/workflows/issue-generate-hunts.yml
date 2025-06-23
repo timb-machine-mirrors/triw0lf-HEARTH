@@ -183,6 +183,13 @@ jobs:
             Please review the updated file here:
             [**View Hunt Draft**](https://github.com/${{ github.repository }}/blob/draft/issue-${{ github.event.issue.number }}/${{ steps.generate_draft_file.outputs.HUNT_FILE_PATH }})
             
+            ---
+            
+            **🔍 Duplicate Detection Results:**
+            ${{ steps.generate_draft_file.outputs.DUPLICATE_ANALYSIS }}
+            
+            ---
+            
             If it looks good, add the `approved` label. To try again, add the `regenerate` label.
 
       - name: "Remove 'regenerate' label"

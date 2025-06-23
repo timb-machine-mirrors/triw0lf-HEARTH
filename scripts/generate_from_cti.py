@@ -10,6 +10,14 @@ import requests
 from bs4 import BeautifulSoup
 import io
 
+# Import duplicate detection functionality
+try:
+    from duplicate_detection import check_duplicates_for_new_submission
+    DUPLICATE_DETECTION_AVAILABLE = True
+except ImportError:
+    print("⚠️ Duplicate detection module not available. Skipping duplicate checks.")
+    DUPLICATE_DETECTION_AVAILABLE = False
+
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -363,6 +371,21 @@ if __name__ == "__main__":
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     print(f'HUNT_FILE_PATH={out_md_path}', file=f)
                     print(f'HUNT_ID={hunt_id}', file=f)
+
+            # 6. Run duplicate detection
+            if DUPLICATE_DETECTION_AVAILABLE:
+                print("🔍 Running duplicate detection...")
+                duplicate_analysis = check_duplicates_for_new_submission(final_content, out_md_path.name)
+                print("Duplicate detection complete.")
+                
+                # Add duplicate detection result to GitHub output
+                if 'GITHUB_OUTPUT' in os.environ:
+                    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                        print(f'DUPLICATE_ANALYSIS<<EOF', file=f)
+                        print(duplicate_analysis, file=f)
+                        print(f'EOF', file=f)
+            else:
+                duplicate_analysis = "⚠️ Duplicate detection not available."
         else:
             print(f"Could not generate hunt content. Skipping file creation.")
     else:
