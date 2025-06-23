@@ -13,6 +13,33 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - name: "Checkout draft branch"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get_branch.outputs.branch_name }}
+          fetch-depth: 0
+
+      - name: "Remove 'needs-triage' label"
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.HEARTH_TOKEN}}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'needs-triage'
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                console.log("Label 'needs-triage' not found, which is fine.");
+              } else {
+                throw error;
+              }
+            }
+
       - name: "Create Pull Request"
         id: create_pr
         uses: actions/github-script@v6

@@ -192,6 +192,27 @@ jobs:
             
             If it looks good, add the `approved` label. To try again, add the `regenerate` label.
 
+      - name: "Remove 'needs-triage' label"
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.HEARTH_TOKEN}}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'needs-triage'
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                console.log("Label 'needs-triage' not found, which is fine.");
+              } else {
+                throw error;
+              }
+            }
+
       - name: "Remove 'regenerate' label"
         if: github.event.label.name == 'regenerate'
         uses: actions/github-script@v6

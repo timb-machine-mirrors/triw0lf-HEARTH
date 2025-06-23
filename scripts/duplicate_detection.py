@@ -173,18 +173,22 @@ Only include hunts with similarity scores above 50.
 
 def generate_duplicate_comment(analysis, new_hunt_info):
     """Generates a GitHub comment about potential duplicates."""
-    if not analysis.get('comparisons'):
-        return "✅ **Duplicate Check Complete**\n\nNo similar existing hunts found. This appears to be a unique submission."
+    comparisons = analysis.get('comparisons', [])
+    if not comparisons:
+        return "✅ **Duplicate Check Complete**\\n\\nNo similar existing hunts found. This appears to be a unique submission."
+
+    # Sort by score (highest first) and limit to the top 5
+    sorted_comparisons = sorted(comparisons, key=lambda x: x.get('similarity_score', 0), reverse=True)[:5]
     
     # The title is now handled by the workflow, so we start the comment content here.
-    comment = f"**Overall Assessment:** {analysis.get('overall_assessment', 'Analysis completed')}\n\n"
-    comment += "**Similar Existing Hunts:**\n\n"
+    comment = f"**Overall Assessment:** {analysis.get('overall_assessment', 'Analysis completed')}\\n\\n"
+    comment += "**Similar Existing Hunts:**\\n\\n"
     
     # Construct the base URL for file links from GitHub environment variables
     repo_url = f"{os.getenv('GITHUB_SERVER_URL', 'https://github.com')}/{os.getenv('GITHUB_REPOSITORY')}"
     branch = os.getenv('GITHUB_REF_NAME', 'main')
 
-    for comp in analysis['comparisons']:
+    for comp in sorted_comparisons:
         score = comp.get('similarity_score', 0)
         explanation = comp.get('explanation', 'No explanation provided')
         recommendation = comp.get('recommendation', 'UNKNOWN')
