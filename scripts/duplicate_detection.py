@@ -22,7 +22,7 @@ def get_all_existing_hunts():
         for hunt_file in dir_path.glob("*.md"):
             try:
                 content = hunt_file.read_text()
-                hunt_info = extract_hunt_info(content, hunt_file.name)
+                hunt_info = extract_hunt_info(content, str(hunt_file))
                 if hunt_info:
                     existing_hunts.append(hunt_info)
             except Exception as e:
@@ -30,7 +30,7 @@ def get_all_existing_hunts():
     
     return existing_hunts
 
-def extract_hunt_info(content, filename):
+def extract_hunt_info(content, filepath):
     """Extracts key information from a hunt file for comparison."""
     lines = content.splitlines()
     
@@ -59,11 +59,12 @@ def extract_hunt_info(content, filename):
     tags = []
     for line in lines:
         if '#' in line and any(tag in line.lower() for tag in ['#t', '#persistence', '#execution', '#defense-evasion', '#discovery', '#lateral-movement', '#collection', '#command-and-control', '#exfiltration', '#impact']):
-            tag_matches = re.findall(r'#\w+', line)
+            tag_matches = re.findall(r'#\\w+', line)
             tags.extend(tag_matches)
     
     return {
-        'filename': filename,
+        'filepath': filepath,
+        'filename': Path(filepath).name,
         'hypothesis': hypothesis,
         'tactic': tactic,
         'tags': list(set(tags)),  # Remove duplicates
@@ -74,6 +75,9 @@ def analyze_similarity(new_hunt, existing_hunts, threshold=0.7):
     """Uses AI to analyze similarity between a new hunt and existing hunts."""
     if not existing_hunts:
         return []
+    
+    # Create a map from filename to its full path for later reference
+    filename_to_path_map = {hunt['filename']: hunt['filepath'] for hunt in existing_hunts}
     
     # Prepare the comparison prompt
     new_hypothesis = new_hunt.get('hypothesis', '')
@@ -145,6 +149,11 @@ Only include hunts with similarity scores above 50.
         # Try to parse JSON response
         try:
             analysis = json.loads(result)
+            # Augment the analysis with the full filepath for creating links
+            for comp in analysis.get('comparisons', []):
+                filename = comp.get('hunt_filename')
+                if filename in filename_to_path_map:
+                    comp['hunt_filepath'] = filename_to_path_map[filename]
             return analysis
         except json.JSONDecodeError:
             # Fallback: return a basic structure
@@ -167,20 +176,22 @@ def generate_duplicate_comment(analysis, new_hunt_info):
     if not analysis.get('comparisons'):
         return "✅ **Duplicate Check Complete**\n\nNo similar existing hunts found. This appears to be a unique submission."
     
-    comment = "🔍 **Duplicate Detection Results**\n\n"
-    
-    # Add overall assessment
-    comment += f"**Overall Assessment:** {analysis.get('overall_assessment', 'Analysis completed')}\n\n"
-    
-    # Add detailed comparisons
+    # The title is now handled by the workflow, so we start the comment content here.
+    comment = f"**Overall Assessment:** {analysis.get('overall_assessment', 'Analysis completed')}\n\n"
     comment += "**Similar Existing Hunts:**\n\n"
     
+    # Construct the base URL for file links from GitHub environment variables
+    repo_url = f"{os.getenv('GITHUB_SERVER_URL', 'https://github.com')}/{os.getenv('GITHUB_REPOSITORY')}"
+    branch = os.getenv('GITHUB_REF_NAME', 'main')
+
     for comp in analysis['comparisons']:
         score = comp.get('similarity_score', 0)
-        filename = comp.get('hunt_filename', 'Unknown')
         explanation = comp.get('explanation', 'No explanation provided')
         recommendation = comp.get('recommendation', 'UNKNOWN')
         
+        filepath = comp.get('hunt_filepath')
+        filename = comp.get('hunt_filename', 'Unknown')
+
         # Color code based on similarity
         if score >= 80:
             emoji = "🔴"
@@ -192,7 +203,13 @@ def generate_duplicate_comment(analysis, new_hunt_info):
             emoji = "🟢"
             status = "LOW SIMILARITY"
         
-        comment += f"{emoji} **{filename}** (Similarity: {score}%)\n"
+        # Create a link if the filepath is available, otherwise just show the filename
+        if filepath:
+            file_url = f"{repo_url}/blob/{branch}/{filepath}"
+            comment += f"{emoji} **[{filename}]({file_url})** (Similarity: {score}%)\n"
+        else:
+            comment += f"{emoji} **{filename}** (Similarity: {score}%)\n"
+
         comment += f"   - **Status:** {status} ({recommendation})\n"
         comment += f"   - **Explanation:** {explanation}\n\n"
     
