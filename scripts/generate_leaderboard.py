@@ -27,25 +27,48 @@ def generate_leaderboard():
     for hunt_file in all_hunts:
         try:
             content = hunt_file.read_text()
-            # Find the markdown table and the submitter
-            table_match = re.search(r'\|.*Submitter.*\|', content)
-            if not table_match:
+            lines = content.splitlines()
+            
+            # Find the table header line that contains "Submitter"
+            header_line = None
+            header_line_index = -1
+            
+            for i, line in enumerate(lines):
+                if '|' in line and 'Submitter' in line:
+                    header_line = line
+                    header_line_index = i
+                    break
+            
+            if not header_line:
                 continue
 
-            header = table_match.group(0)
-            columns = [c.strip() for c in header.split('|') if c.strip()]
+            # Parse the header to find the submitter column index
+            columns = [c.strip() for c in header_line.split('|') if c.strip()]
             submitter_index = -1
             for i, col in enumerate(columns):
-                if "Submitter" in col:
+                # Remove markdown formatting and check for "Submitter"
+                clean_col = re.sub(r'\*\*|\*', '', col).strip()
+                if "Submitter" in clean_col:
                     submitter_index = i
                     break
             
             if submitter_index == -1:
                 continue
 
-            # The row after the header contains the data
-            data_row = content.splitlines()[content.splitlines().index(header) + 2]
-            submitter_cell = data_row.split('|')[submitter_index + 1]
+            # Find the data row (skip the separator line)
+            data_row_index = header_line_index + 2
+            if data_row_index >= len(lines):
+                continue
+                
+            data_row = lines[data_row_index]
+            if not data_row.strip() or '|' not in data_row:
+                continue
+                
+            data_cells = [c.strip() for c in data_row.split('|') if c.strip()]
+            if submitter_index >= len(data_cells):
+                continue
+                
+            submitter_cell = data_cells[submitter_index]
             
             submitter_name = parse_submitter(submitter_cell)
             if submitter_name and submitter_name != "hearth-auto-intel":
