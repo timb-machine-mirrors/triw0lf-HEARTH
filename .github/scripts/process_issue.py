@@ -102,8 +102,16 @@ def main():
 
     # Check if the content has already been processed
     if "*(This will be processed automatically by our system. Please leave this section as is.)*" not in issue_body:
-        print("Content already processed. Skipping.")
-        return
+        print("Content already processed. Checking if file exists...")
+        
+        # For regeneration cases, check if the file exists
+        expected_file = Path(f".hearth/intel-drops/issue-{issue_number}-cti.txt")
+        if expected_file.exists():
+            print(f"CTI file already exists: {expected_file}")
+            return
+        else:
+            print(f"CTI file not found: {expected_file}. Re-downloading content...")
+            # Continue with download even though it was "processed" before
 
     # Download the full content
     print("Downloading CTI content from URL...")
