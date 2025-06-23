@@ -85,13 +85,13 @@ main {
 }
 
 .search-container {
-    flex-grow: 1;
-    margin-right: 20px;
-    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 .search-input {
-    width: 100%;
+    flex-grow: 1;
     padding: 15px 20px;
     border: 2px solid #333;
     border-radius: 8px;
@@ -99,11 +99,11 @@ main {
     color: #e0e0e0;
     font-size: 16px;
     box-sizing: border-box;
+    margin-right: 10px;
 }
 
 .clear-btn {
-    position: absolute;
-    padding: 12px 20px;
+    padding: 15px 20px;
     background-color: #444;
     color: white;
     border: none;
@@ -111,6 +111,7 @@ main {
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.3s;
+    flex-shrink: 0;
 }
 
 .clear-btn:hover {
