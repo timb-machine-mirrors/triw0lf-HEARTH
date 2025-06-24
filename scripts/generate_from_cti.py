@@ -2,13 +2,19 @@ import os
 import time
 import re
 from pathlib import Path
-from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import io
+
+# Add Anthropic (Claude) support
+try:
+    import anthropic
+    CLAUDE_AVAILABLE = True
+except ImportError:
+    CLAUDE_AVAILABLE = False
 
 # Import duplicate detection functionality
 try:
@@ -19,7 +25,20 @@ except ImportError:
     DUPLICATE_DETECTION_AVAILABLE = False
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# AI provider selection
+AI_PROVIDER = os.getenv("AI_PROVIDER", "claude").lower()
+
+if AI_PROVIDER == "claude":
+    if not CLAUDE_AVAILABLE:
+        raise ImportError("Anthropic (Claude) client not installed. Please install 'anthropic' Python package.")
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    if not ANTHROPIC_API_KEY:
+        raise ValueError("ANTHROPIC_API_KEY not set in environment.")
+    anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+else:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 CTI_INPUT_DIR = Path(".hearth/intel-drops/")
 OUTPUT_DIR    = Path("Flames/")
@@ -143,18 +162,35 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
     for i, chunk in enumerate(chunks):
         print(f"Summarizing chunk {i+1}/{len(chunks)}...")
         try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[{"role":"user","content":
-                    "This is one part of a larger threat intelligence report. "
+            if AI_PROVIDER == "claude":
+                # Claude prompt format: system prompt, then user content
+                prompt = (
+                    f"\n\nHuman: This is one part of a larger threat intelligence report. "
                     "Extract the key actionable intelligence from this section. "
                     "Focus on specific tools, techniques, vulnerabilities, and adversary procedures. "
                     "Your output will be combined with others, so be concise and clear.\n\n"
-                    f"--- CHUNK {i+1}/{len(chunks)} ---\n\n{chunk}"
-                }],
-                temperature=0.2,
-            )
-            summary = response.choices[0].message.content.strip()
+                    f"--- CHUNK {i+1}/{len(chunks)} ---\n\n{chunk}\n\nAssistant:"
+                )
+                response = anthropic_client.messages.create(
+                    model="claude-3-opus-20240229",  # or another Claude model
+                    max_tokens=1024,
+                    temperature=0.2,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                summary = response.content[0].text.strip()
+            else:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role":"user","content":
+                        "This is one part of a larger threat intelligence report. "
+                        "Extract the key actionable intelligence from this section. "
+                        "Focus on specific tools, techniques, vulnerabilities, and adversary procedures. "
+                        "Your output will be combined with others, so be concise and clear.\n\n"
+                        f"--- CHUNK {i+1}/{len(chunks)} ---\n\n{chunk}"
+                    }],
+                    temperature=0.2,
+                )
+                summary = response.choices[0].message.content.strip()
             chunk_summaries.append(summary)
         except Exception as e:
             print(f"❌ Error summarizing chunk {i+1}: {e}")
@@ -166,22 +202,38 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
     combined_summary = "\n\n---\n\n".join(chunk_summaries)
     
     try:
-        final_response = client.chat.completions.create(
-            model=model,
-            messages=[{"role":"user","content":
-                "The following are summaries of different parts of a long threat intelligence report. "
+        if AI_PROVIDER == "claude":
+            prompt = (
+                "\n\nHuman: The following are summaries of different parts of a long threat intelligence report. "
                 "Synthesize them into a single, coherent, and actionable report. "
                 "Remove redundancy and create a clear narrative of the adversary's actions. "
                 "The final output should be a comprehensive summary that can be used to generate a threat hunt.\n\n"
-                f"--- COMBINED SUMMARIES ---\n\n{combined_summary}"
-            }],
-            temperature=0.2,
-        )
-        return final_response.choices[0].message.content.strip()
+                f"--- COMBINED SUMMARIES ---\n\n{combined_summary}\n\nAssistant:"
+            )
+            final_response = anthropic_client.messages.create(
+                model="claude-3-opus-20240229",
+                max_tokens=2048,
+                temperature=0.2,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return final_response.content[0].text.strip()
+        else:
+            final_response = client.chat.completions.create(
+                model=model,
+                messages=[{"role":"user","content":
+                    "The following are summaries of different parts of a long threat intelligence report. "
+                    "Synthesize them into a single, coherent, and actionable report. "
+                    "Remove redundancy and create a clear narrative of the adversary's actions. "
+                    "The final output should be a comprehensive summary that can be used to generate a threat hunt.\n\n"
+                    f"--- COMBINED SUMMARIES ---\n\n{combined_summary}"
+                }],
+                temperature=0.2,
+            )
+            return final_response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ Error creating final summary: {e}")
         # Fallback: return the combined summaries if the final step fails
-        return f"WARNING: Final summarization failed. Combined summaries provided below:\\n\\n{combined_summary}"
+        return f"WARNING: Final summarization failed. Combined summaries provided below:\n\n{combined_summary}"
 
 def cleanup_hunt_body(ai_content):
     """
@@ -228,7 +280,6 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
         
         regeneration_instruction = ""
         temperature = 0.2
-        feedback = os.getenv("FEEDBACK", "").strip()
         if is_regeneration:
             print("🔄 This is a regeneration. Requesting a new hypothesis.")
             regeneration_instruction = (
@@ -237,8 +288,6 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
                 "Analyze the CTI report again and focus on a different technique, a more specific behavior, "
                 "or a unique, actionable aspect that was missed before. Do not repeat the previous hypothesis.\n\n"
             )
-            if feedback:
-                regeneration_instruction += f"User feedback for this regeneration: {feedback}\n\n"
             temperature = 0.7
 
         prompt = USER_TEMPLATE.format(
@@ -247,14 +296,25 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
             cti_source_url=cti_source_url,
             submitter_credit=submitter_credit
         )
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role":"system","content":SYSTEM_PROMPT},
-                     {"role":"user","content":prompt}],
-            temperature=temperature,
-            max_tokens=800
-        )
-        return response.choices[0].message.content.strip()
+        if AI_PROVIDER == "claude":
+            # Claude prompt: system prompt as context, then user content
+            full_prompt = f"\n\nHuman: {SYSTEM_PROMPT}\n\n{prompt}\n\nAssistant:"
+            response = anthropic_client.messages.create(
+                model="claude-3-opus-20240229",
+                max_tokens=1200,
+                temperature=temperature,
+                messages=[{"role": "user", "content": full_prompt}]
+            )
+            return response.content[0].text.strip()
+        else:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role":"system","content":SYSTEM_PROMPT},
+                         {"role":"user","content":prompt}],
+                temperature=temperature,
+                max_tokens=800
+            )
+            return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ Error generating hunt content: {str(e)}")
         return None

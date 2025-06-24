@@ -80,7 +80,7 @@ jobs:
       - name: "Install Python dependencies"
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 PyPDF2 python-docx anthropic python-dotenv
+          pip install requests beautifulsoup4 PyPDF2 python-docx openai python-dotenv anthropic
 
       - name: "Setup Git Branch"
         run: |
@@ -213,6 +213,8 @@ jobs:
       - name: "Run HEARTH draft generator"
         id: generate_draft_file
         env:
+          AI_PROVIDER: ${{ vars.AI_PROVIDER || 'claude' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CTI_SOURCE_URL: ${{ steps.parse_issue.outputs.source_url }}
           EXISTING_HUNT_FILE: ${{ steps.find_hunt.outputs.hunt_file_path }}
