@@ -163,6 +163,53 @@ jobs:
             exit 1
           fi
 
+      - name: "Get latest feedback comment from author or admin"
+        id: feedback
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const issueAuthor = issue.user.login;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            // Helper to check if user is admin/maintainer
+            async function isAdminOrMaintainer(username) {
+              try {
+                const { data: membership } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  username,
+                });
+                return ['admin', 'maintain'].includes(membership.permission);
+              } catch {
+                return false;
+              }
+            }
+
+            let feedback = '';
+            for (let i = comments.length - 1; i >= 0; i--) {
+              const comment = comments[i];
+              if (comment.user.login === issueAuthor) {
+                feedback = comment.body;
+                break;
+              }
+              if (await isAdminOrMaintainer(comment.user.login)) {
+                feedback = comment.body;
+                break;
+              }
+            }
+            core.setOutput('feedback', feedback);
+
       - name: "Run HEARTH draft generator"
         id: generate_draft_file
         env:
@@ -171,6 +218,7 @@ jobs:
           EXISTING_HUNT_FILE: ${{ steps.find_hunt.outputs.hunt_file_path }}
           SUBMITTER_NAME: ${{ steps.parse_issue.outputs.submitter_name }}
           PROFILE_LINK: ${{ steps.parse_issue.outputs.profile_link }}
+          FEEDBACK: ${{ steps.feedback.outputs.feedback }}
         run: python scripts/generate_from_cti.py
 
       - name: "Commit and push generated hunt"
@@ -207,7 +255,9 @@ jobs:
             
             ---
             
-            If it looks good, add the `approved` label. To try again, add the `regenerate` label.
+            If you want to regenerate, **please leave a comment on this issue with your feedback or what you'd like changed, then add the `regenerate` label**.
+            
+            If it looks good, add the `approved` label.
 
       - name: "Remove 'needs-triage' label"
         if: success()
