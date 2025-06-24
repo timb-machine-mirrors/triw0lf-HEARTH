@@ -732,6 +732,26 @@ const HUNTS_DATA = [
     "file_path": "Flames/H030.md"
   },
   {
+    "id": "H031",
+    "category": "Flames",
+    "title": "Threat actors are systematically enumerating and extracting sensitive data from cryptocurrency wallet browser extensions to support financial theft operations.",
+    "tactic": "Collection",
+    "notes": "Based on ATT&CK technique T1005. Automated collection of cryptocurrency wallet data from browser extensions including MetaMask, Phantom, Keplr, and others.",
+    "tags": [
+      "collection",
+      "T1005",
+      "cryptocurrency",
+      "bluenoroff"
+    ],
+    "submitter": {
+      "name": "Sydney Marrone",
+      "link": "https://www.linkedin.com/in/sydneymarrone/"
+    },
+    "why": "- Detecting this behavior is crucial as cryptocurrency wallet harvesting directly supports BlueNoroff's primary financial theft objectives.\n- If successful, this tactic can lead to significant financial losses through unauthorized access to cryptocurrency accounts and private keys.\n- This behavior indicates targeting of high-value cryptocurrency assets and may be part of larger financial crime operations.",
+    "references": "- [MITRE ATT&CK T1005](https://attack.mitre.org/techniques/T1005/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H031.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
