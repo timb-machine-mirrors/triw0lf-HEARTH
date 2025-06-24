@@ -228,6 +228,7 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
         
         regeneration_instruction = ""
         temperature = 0.2
+        feedback = os.getenv("FEEDBACK", "").strip()
         if is_regeneration:
             print("🔄 This is a regeneration. Requesting a new hypothesis.")
             regeneration_instruction = (
@@ -236,6 +237,8 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
                 "Analyze the CTI report again and focus on a different technique, a more specific behavior, "
                 "or a unique, actionable aspect that was missed before. Do not repeat the previous hypothesis.\n\n"
             )
+            if feedback:
+                regeneration_instruction += f"User feedback for this regeneration: {feedback}\n\n"
             temperature = 0.7
 
         prompt = USER_TEMPLATE.format(
