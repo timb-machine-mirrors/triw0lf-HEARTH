@@ -672,6 +672,26 @@ const HUNTS_DATA = [
     "file_path": "Flames/H027.md"
   },
   {
+    "id": "H028",
+    "category": "Flames",
+    "title": "Sophisticated threat actors are querying display state using system_profiler before executing malicious commands to avoid detection when users are actively using their systems.",
+    "tactic": "Defense Evasion",
+    "notes": "Based on ATT&CK technique T1497.003. Using display state awareness to time malicious activities when users are away from their systems.",
+    "tags": [
+      "defenseevasion",
+      "T1497.003",
+      "evasion",
+      "macos"
+    ],
+    "submitter": {
+      "name": "Sydney Marrone",
+      "link": "https://www.linkedin.com/in/sydneymarrone/"
+    },
+    "why": "- Detecting this behavior is crucial as display state awareness indicates sophisticated operational security and intent to avoid user detection.\n- If successful, this tactic allows threat actors to execute malicious activities when users are away, reducing the likelihood of discovery.\n- This behavior demonstrates advanced understanding of user behavior patterns and sophisticated evasion techniques.",
+    "references": "- [MITRE ATT&CK T1497.003](https://attack.mitre.org/techniques/T1497/003/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H028.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
