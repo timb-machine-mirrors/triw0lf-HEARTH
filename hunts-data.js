@@ -652,6 +652,26 @@ const HUNTS_DATA = [
     "file_path": "Flames/H026.md"
   },
   {
+    "id": "H027",
+    "category": "Flames",
+    "title": "BlueNoroff threat actors are delivering malicious AppleScript files (.scpt) via fake Zoom domains with oversized files containing >10,000 blank lines to mask malicious payload delivery for initial access into cryptocurrency organizations.",
+    "tactic": "Initial Access",
+    "notes": "Based on ATT&CK technique T1566.002. BlueNoroff campaign targeting Web3 organizations using deepfake meetings and fake Zoom extensions.",
+    "tags": [
+      "initialaccess",
+      "T1566.002",
+      "applescript",
+      "bluenoroff"
+    ],
+    "submitter": {
+      "name": "Sydney Marrone",
+      "link": "https://www.linkedin.com/in/sydneymarrone/"
+    },
+    "why": "- Detecting this behavior is crucial as AppleScript provides native system access and can bypass many security controls when delivered through social engineering.\n- If successful, this tactic allows threat actors to establish initial foothold on macOS systems in high-value cryptocurrency organizations.\n- This behavior has been observed in BlueNoroff's sophisticated social engineering campaigns using deepfake technology and impersonation of legitimate meeting platforms.",
+    "references": "- [MITRE ATT&CK T1566.002](https://attack.mitre.org/techniques/T1566/002/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H027.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
