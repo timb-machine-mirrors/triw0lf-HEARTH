@@ -712,6 +712,26 @@ const HUNTS_DATA = [
     "file_path": "Flames/H029.md"
   },
   {
+    "id": "H030",
+    "category": "Flames",
+    "title": "Threat actors are establishing persistence on macOS systems using LaunchDaemons that impersonate legitimate messaging services (like \"Telegram2\") but execute malicious binaries from non-standard locations.",
+    "tactic": "Persistence",
+    "notes": "Based on ATT&CK technique T1543.004. Creating LaunchDaemon persistence using legitimate service names with suspicious execution paths.",
+    "tags": [
+      "persistence",
+      "T1543.004",
+      "launchdaemon",
+      "macos"
+    ],
+    "submitter": {
+      "name": "Sydney Marrone",
+      "link": "https://www.linkedin.com/in/sydneymarrone/"
+    },
+    "why": "- Detecting this behavior is crucial as LaunchDaemon persistence provides automatic execution at system startup with elevated privileges.\n- If successful, this tactic ensures threat actor access survives system reboots and provides a reliable mechanism for maintaining presence.\n- This behavior demonstrates sophisticated understanding of macOS persistence mechanisms while attempting to blend in with legitimate services.",
+    "references": "- [MITRE ATT&CK T1543.004](https://attack.mitre.org/techniques/T1543/004/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H030.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
