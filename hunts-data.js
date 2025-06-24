@@ -692,6 +692,26 @@ const HUNTS_DATA = [
     "file_path": "Flames/H028.md"
   },
   {
+    "id": "H029",
+    "category": "Flames",
+    "title": "Advanced threat actors are leveraging debugger entitlements and task_for_pid API calls to perform process injection on macOS systems, deploying malicious payloads into legitimate processes.",
+    "tactic": "Defense Evasion",
+    "notes": "Based on ATT&CK technique T1055. Using debugger entitlements for process injection with task_for_pid and mach_vm APIs on macOS.",
+    "tags": [
+      "defenseevasion",
+      "T1055",
+      "processinjection",
+      "macos"
+    ],
+    "submitter": {
+      "name": "Sydney Marrone",
+      "link": "https://www.linkedin.com/in/sydneymarrone/"
+    },
+    "why": "- Detecting this behavior is crucial as process injection allows malicious code to execute within legitimate processes, evading many security controls.\n- If successful, this tactic enables threat actors to hide malicious activity within trusted processes and potentially inherit their privileges.\n- This behavior is rare on macOS outside of legitimate development scenarios, making it a high-value detection opportunity.",
+    "references": "- [MITRE ATT&CK T1055](https://attack.mitre.org/techniques/T1055/)\n- [Source CTI Report](https://www.huntress.com/blog/inside-bluenoroff-web3-intrusion-analysis)",
+    "file_path": "Flames/H029.md"
+  },
+  {
     "id": "M001",
     "category": "Alchemy",
     "title": "A machine learning model can detect anomalies in user login patterns that indicate compromised accounts.",
