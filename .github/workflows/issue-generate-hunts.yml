@@ -63,7 +63,14 @@ jobs:
       
       - name: "Set next attempt number"
         id: next_attempt
-        run: echo "attempt_number=$((${{ steps.check_regen.outputs.attempt_count || 0 }} + 1))" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event.label.name }}" == "regenerate" ]; then
+            # For regeneration, increment the previous attempt count
+            echo "attempt_number=$((${{ steps.check_regen.outputs.attempt_count || 0 }} + 1))" >> $GITHUB_OUTPUT
+          else
+            # For first generation, this is attempt 1
+            echo "attempt_number=1" >> $GITHUB_OUTPUT
+          fi
       
       - name: "Set up Python 3"
         uses: actions/setup-python@v5
@@ -186,7 +193,9 @@ jobs:
           token: ${{ secrets.HEARTH_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           body: |
-            ${{ github.event.label.name == 'regenerate' && format('♻️ A new version of the hunt has been drafted! (Attempt {0}/5)', steps.next_attempt.outputs.attempt_number) || '✅ A new hunt has been drafted from your submission.' }}
+            ${{ github.event.label.name == 'regenerate' && format('♻️ A new version of the hunt has been drafted! (Attempt {0}/5)', steps.next_attempt.outputs.attempt_number) || format('✅ A new hunt has been drafted from your submission! (Attempt {0}/5)', steps.next_attempt.outputs.attempt_number) }}
+            
+            **Hypothesis:** ${{ steps.generate_draft_file.outputs.HYPOTHESIS }}
             
             Please review the updated file here:
             [**View Hunt Draft**](https://github.com/${{ github.repository }}/blob/draft/issue-${{ github.event.issue.number }}/${{ steps.generate_draft_file.outputs.HUNT_FILE_PATH }})

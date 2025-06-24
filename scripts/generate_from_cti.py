@@ -342,22 +342,31 @@ if __name__ == "__main__":
             # 2. Clean up the AI's output
             cleaned_body = cleanup_hunt_body(hunt_body)
 
-            # 3. Construct the final markdown content
+            # 3. Extract the hypothesis (first line of cleaned content)
+            hypothesis = cleaned_body.split('\n')[0].strip()
+            if hypothesis.startswith('#'):
+                # Remove markdown headers
+                hypothesis = hypothesis.lstrip('#').strip()
+            
+            # 4. Construct the final markdown content
             final_content = f"# {hunt_id}\n\n"
             final_content += cleaned_body.replace("| [Leave blank] |", f"| {hunt_id}    |")
 
-            # 4. Save the hunt file
+            # 5. Save the hunt file
             with open(out_md_path, "w") as f:
                 f.write(final_content)
             print(f"✅ Successfully wrote hunt to {out_md_path}")
             
-            # 5. Set the output for the GitHub Action
+            # 6. Set the output for the GitHub Action
             if 'GITHUB_OUTPUT' in os.environ:
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     print(f'HUNT_FILE_PATH={out_md_path}', file=f)
                     print(f'HUNT_ID={hunt_id}', file=f)
+                    print(f'HYPOTHESIS<<EOF', file=f)
+                    print(hypothesis, file=f)
+                    print(f'EOF', file=f)
 
-            # 6. Run duplicate detection
+            # 7. Run duplicate detection
             if DUPLICATE_DETECTION_AVAILABLE:
                 print("🔍 Running duplicate detection...")
                 duplicate_analysis = check_duplicates_for_new_submission(final_content, out_md_path.name)
