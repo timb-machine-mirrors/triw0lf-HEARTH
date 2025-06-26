@@ -279,7 +279,7 @@ def cleanup_hunt_body(ai_content):
 
     return "\n".join(lines[first_content_index:]).strip()
 
-def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration=False, max_attempts=5):
+def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration=False, max_attempts=5, user_feedback=None):
     """Generate hunt content with TTP diversity enforcement."""
     try:
         print("Starting CTI summarization...")
@@ -297,7 +297,7 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
                 _load_existing_hunts_for_ttp_context(deduplicator)
         else:
             print("⚠️ TTP diversity system unavailable, using basic generation")
-            return generate_hunt_content_basic(summary, cti_source_url, submitter_credit, is_regeneration)
+            return generate_hunt_content_basic(summary, cti_source_url, submitter_credit, is_regeneration, user_feedback)
         
         # Attempt generation with TTP diversity
         for attempt in range(max_attempts):
@@ -315,7 +315,13 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
                     if used_tactics:
                         diversity_instruction = f"CRITICAL: Previous attempts used these tactics: {', '.join(used_tactics)}. You MUST use a completely different MITRE ATT&CK tactic and technique. "
                 
+                # Add user feedback constraints
+                feedback_instruction = ""
+                if user_feedback:
+                    feedback_instruction = f"USER FEEDBACK CONSTRAINTS: {user_feedback}\nYou MUST strictly follow these user instructions. "
+                
                 regeneration_instruction = (
+                    f"{feedback_instruction}"
                     f"{diversity_instruction}"
                     "IMPORTANT: Generate a NEW and DIFFERENT hunt hypothesis with different TTPs. "
                     "Analyze the CTI report and focus on a different MITRE ATT&CK technique, tactic, "
@@ -414,14 +420,21 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
         print(f"❌ Error in TTP-diverse generation: {str(e)}")
         return None
 
-def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
+def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_regeneration=False, user_feedback=None):
     """Basic hunt content generation without TTP diversity (fallback)."""
     try:
         regeneration_instruction = ""
         temperature = 0.2
         if is_regeneration:
             print("🔄 This is a regeneration. Requesting a new hypothesis.")
+            
+            # Add user feedback constraints
+            feedback_instruction = ""
+            if user_feedback:
+                feedback_instruction = f"USER FEEDBACK CONSTRAINTS: {user_feedback}\nYou MUST strictly follow these user instructions. "
+            
             regeneration_instruction = (
+                f"{feedback_instruction}"
                 "IMPORTANT: The previous attempt to generate a hunt from this CTI was not satisfactory. "
                 "Your task is to generate a NEW and DIFFERENT hunt hypothesis. "
                 "Analyze the CTI report again and focus on a different technique, a more specific behavior, "
@@ -458,9 +471,9 @@ def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_r
         return None
 
 # Alias for backward compatibility
-def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
+def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regeneration=False, user_feedback=None):
     """Generate hunt content (with TTP diversity if available)."""
-    return generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration)
+    return generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration, user_feedback=user_feedback)
 
 def _load_existing_hunts_for_ttp_context(deduplicator):
     """Load existing hunt hypotheses to build TTP diversity context."""
@@ -602,12 +615,16 @@ if __name__ == "__main__":
         submitter_credit = submitter_name
 
     if cti_content:
+        # Get user feedback from environment
+        user_feedback = os.getenv("FEEDBACK")
+        
         # 1. Generate the core hunt content from the AI
         hunt_body = generate_hunt_content(
             cti_content, 
             cti_source_url, 
             submitter_credit,
-            is_regeneration=is_regeneration
+            is_regeneration=is_regeneration,
+            user_feedback=user_feedback
         )
 
         if hunt_body:
