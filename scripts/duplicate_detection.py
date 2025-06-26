@@ -5,28 +5,35 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from collections import defaultdict
 import json
+from hunt_parser_utils import (
+    find_hunt_files,
+    find_table_header_line,
+    extract_table_cells,
+    clean_markdown_formatting
+)
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_all_existing_hunts():
     """Retrieves all existing hunt files and extracts their key information."""
-    hunt_dirs = ["Flames", "Embers", "Alchemy"]
+    hunt_directories = ["Flames", "Embers", "Alchemy"]
     existing_hunts = []
     
-    for directory in hunt_dirs:
-        dir_path = Path(directory)
-        if not dir_path.exists():
+    for directory_name in hunt_directories:
+        directory_path = Path(directory_name)
+        if not directory_path.exists():
             continue
             
-        for hunt_file in dir_path.glob("*.md"):
+        hunt_files = directory_path.glob("*.md")
+        for hunt_file in hunt_files:
             try:
                 content = hunt_file.read_text()
-                hunt_info = extract_hunt_info(content, str(hunt_file))
-                if hunt_info:
-                    existing_hunts.append(hunt_info)
-            except Exception as e:
-                print(f"Error reading {hunt_file}: {e}")
+                hunt_information = extract_hunt_info(content, str(hunt_file))
+                if hunt_information:
+                    existing_hunts.append(hunt_information)
+            except Exception as error:
+                print(f"Error reading {hunt_file}: {error}")
     
     return existing_hunts
 
@@ -74,36 +81,45 @@ def extract_hunt_info(content, filepath):
 def analyze_similarity(new_hunt, existing_hunts, threshold=0.7):
     """Uses AI to analyze similarity between a new hunt and existing hunts."""
     if not existing_hunts:
-        return []
+        return create_empty_analysis_result()
     
-    # Create a map from filename to its full path for later reference
-    filename_to_path_map = {hunt['filename']: hunt['filepath'] for hunt in existing_hunts}
+    filename_to_path_mapping = create_filename_path_mapping(existing_hunts)
+    comparison_prompt = build_comparison_prompt(new_hunt, existing_hunts)
     
-    # Prepare the comparison prompt
-    new_hypothesis = new_hunt.get('hypothesis', '')
-    new_tactic = new_hunt.get('tactic', '')
-    new_tags = new_hunt.get('tags', [])
+    try:
+        ai_response = get_ai_similarity_analysis(comparison_prompt)
+        return process_ai_response(ai_response, filename_to_path_mapping)
+    except Exception as error:
+        print(f"Error in AI analysis: {error}")
+        return create_error_analysis_result(error)
+
+def create_empty_analysis_result():
+    """Create an empty analysis result structure."""
+    return {
+        "comparisons": [],
+        "overall_assessment": "No existing hunts to compare against",
+        "recommendation": "APPROVE"
+    }
+
+def create_filename_path_mapping(existing_hunts):
+    """Create a mapping from filename to full path."""
+    return {hunt['filename']: hunt['filepath'] for hunt in existing_hunts}
+
+def build_comparison_prompt(new_hunt, existing_hunts):
+    """Build the AI comparison prompt."""
+    new_hunt_details = extract_new_hunt_details(new_hunt)
+    existing_hunts_summary = create_existing_hunts_summary(existing_hunts)
     
-    # Create a summary of existing hunts for comparison
-    existing_summary = []
-    for i, hunt in enumerate(existing_hunts[:10]):  # Limit to 10 most recent for performance
-        existing_summary.append(f"""
-Hunt {i+1} ({hunt['filename']}):
-- Hypothesis: {hunt['hypothesis']}
-- Tactic: {hunt['tactic']}
-- Tags: {', '.join(hunt['tags'])}
-""")
-    
-    comparison_prompt = f"""
+    return f"""
 You are analyzing a new threat hunt submission to check for potential duplicates or high similarity with existing hunts.
 
 NEW HUNT SUBMISSION:
-- Hypothesis: {new_hypothesis}
-- Tactic: {new_tactic}
-- Tags: {', '.join(new_tags)}
+- Hypothesis: {new_hunt_details['hypothesis']}
+- Tactic: {new_hunt_details['tactic']}
+- Tags: {', '.join(new_hunt_details['tags'])}
 
 EXISTING HUNTS TO COMPARE AGAINST:
-{chr(10).join(existing_summary)}
+{existing_hunts_summary}
 
 TASK: Analyze the similarity between the new hunt and each existing hunt. Consider:
 1. Conceptual similarity (same core technique or behavior)
@@ -133,43 +149,73 @@ Respond in JSON format:
 Only include hunts with similarity scores above 50.
 """
 
+def extract_new_hunt_details(new_hunt):
+    """Extract details from new hunt for comparison."""
+    return {
+        'hypothesis': new_hunt.get('hypothesis', ''),
+        'tactic': new_hunt.get('tactic', ''),
+        'tags': new_hunt.get('tags', [])
+    }
+
+def create_existing_hunts_summary(existing_hunts):
+    """Create a summary of existing hunts for comparison."""
+    summary_parts = []
+    # Limit to 10 most recent for performance
+    for index, hunt in enumerate(existing_hunts[:10]):
+        hunt_summary = f"""
+Hunt {index + 1} ({hunt['filename']}):
+- Hypothesis: {hunt['hypothesis']}
+- Tactic: {hunt['tactic']}
+- Tags: {', '.join(hunt['tags'])}
+"""
+        summary_parts.append(hunt_summary)
+    
+    return chr(10).join(summary_parts)
+
+def get_ai_similarity_analysis(comparison_prompt):
+    """Get AI analysis response."""
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a threat hunting expert analyzing hunt submissions for duplicates and similarities. Be thorough but fair in your assessment."},
+            {"role": "user", "content": comparison_prompt}
+        ],
+        temperature=0.2,
+        max_tokens=2000
+    )
+    return response.choices[0].message.content.strip()
+
+def process_ai_response(ai_response, filename_to_path_mapping):
+    """Process and parse AI response."""
     try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a threat hunting expert analyzing hunt submissions for duplicates and similarities. Be thorough but fair in your assessment."},
-                {"role": "user", "content": comparison_prompt}
-            ],
-            temperature=0.2,
-            max_tokens=2000
-        )
-        
-        result = response.choices[0].message.content.strip()
-        
-        # Try to parse JSON response
-        try:
-            analysis = json.loads(result)
-            # Augment the analysis with the full filepath for creating links
-            for comp in analysis.get('comparisons', []):
-                filename = comp.get('hunt_filename')
-                if filename in filename_to_path_map:
-                    comp['hunt_filepath'] = filename_to_path_map[filename]
-            return analysis
-        except json.JSONDecodeError:
-            # Fallback: return a basic structure
-            return {
-                "comparisons": [],
-                "overall_assessment": "Could not parse AI analysis",
-                "recommendation": "FLAG_FOR_REVIEW"
-            }
-            
-    except Exception as e:
-        print(f"Error in AI analysis: {e}")
-        return {
-            "comparisons": [],
-            "overall_assessment": f"Error during analysis: {e}",
-            "recommendation": "FLAG_FOR_REVIEW"
-        }
+        analysis_result = json.loads(ai_response)
+        augment_analysis_with_file_paths(analysis_result, filename_to_path_mapping)
+        return analysis_result
+    except json.JSONDecodeError:
+        return create_parse_error_result()
+
+def augment_analysis_with_file_paths(analysis_result, filename_to_path_mapping):
+    """Add file paths to analysis comparisons."""
+    for comparison in analysis_result.get('comparisons', []):
+        filename = comparison.get('hunt_filename')
+        if filename in filename_to_path_mapping:
+            comparison['hunt_filepath'] = filename_to_path_mapping[filename]
+
+def create_parse_error_result():
+    """Create result for JSON parsing errors."""
+    return {
+        "comparisons": [],
+        "overall_assessment": "Could not parse AI analysis",
+        "recommendation": "FLAG_FOR_REVIEW"
+    }
+
+def create_error_analysis_result(error):
+    """Create result for analysis errors."""
+    return {
+        "comparisons": [],
+        "overall_assessment": f"Error during analysis: {error}",
+        "recommendation": "FLAG_FOR_REVIEW"
+    }
 
 def generate_duplicate_comment(analysis, new_hunt_info):
     """Generates a GitHub comment about potential duplicates."""

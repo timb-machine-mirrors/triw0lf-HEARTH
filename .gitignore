@@ -1,0 +1,10 @@
+
+# Enhanced HEARTH Runtime Files
+logs/
+cache/
+scripts/__pycache__/
+.github/scripts/__pycache__/
+*.pyc
+*.pyo
+__pycache__/
+

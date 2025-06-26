@@ -1,116 +1,188 @@
 // HEARTH Hunt Database Webfront
 // Requires: hunts-data.js (defines HUNTS_DATA)
 
-document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements
-  const huntsGrid = document.getElementById('huntsGrid');
-  const searchInput = document.getElementById('searchInput');
-  const clearSearch = document.getElementById('clearSearch');
-  const categoryFilter = document.getElementById('categoryFilter');
-  const tacticFilter = document.getElementById('tacticFilter');
-  const tagFilter = document.getElementById('tagFilter');
-  const huntCount = document.getElementById('huntCount');
-  const loadingSection = document.getElementById('loading');
-  const sortHuntsSelect = document.getElementById('sortHunts');
+// Enhanced HEARTH Application with Performance Optimizations
+class HearthApp {
+  constructor() {
+    this.huntsData = HUNTS_DATA;
+    this.filteredHunts = [...this.huntsData];
+    this.searchCache = new Map();
+    this.renderCache = new Map();
+    this.debounceTimer = null;
+    
+    this.initializeElements();
+    this.setupEventListeners();
+    this.initializeApp();
+  }
+  
+  initializeElements() {
+    this.elements = {
+      huntsGrid: document.getElementById('huntsGrid'),
+      searchInput: document.getElementById('searchInput'),
+      clearSearch: document.getElementById('clearSearch'),
+      categoryFilter: document.getElementById('categoryFilter'),
+      tacticFilter: document.getElementById('tacticFilter'),
+      tagFilter: document.getElementById('tagFilter'),
+      huntCount: document.getElementById('huntCount'),
+      loadingSection: document.getElementById('loading'),
+      sortHuntsSelect: document.getElementById('sortHunts')
+    };
+    
+    // Validate required elements
+    const missingElements = Object.entries(this.elements)
+      .filter(([name, element]) => !element)
+      .map(([name]) => name);
+    
+    if (missingElements.length > 0) {
+      console.error('Missing required elements:', missingElements);
+      throw new Error(`Required DOM elements not found: ${missingElements.join(', ')}`);
+    }
 
-  // Create modal for hunt details
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div id="modal-body"></div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  // Modal functionality
-  const closeBtn = modal.querySelector('.close');
-  const modalBody = document.getElementById('modal-body');
-
-  closeBtn.onclick = () => modal.style.display = 'none';
-  modal.onclick = (e) => {
-    if (e.target === modal) modal.style.display = 'none';
-  };
-
-  // Helper: Get unique values for dropdowns
-  function getUnique(field) {
-    const set = new Set();
-    HUNTS_DATA.forEach(h => {
-      if (field === 'tags') {
-        (h.tags || []).forEach(tag => set.add(tag));
-      } else if (field === 'tactic') {
-        if (h.tactic) h.tactic.split(',').map(t => t.trim()).forEach(t => t && set.add(t));
-      } else {
-        set.add(h[field]);
+  }
+  
+  createModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="modal-body"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const closeBtn = modal.querySelector('.close');
+    const modalBody = document.getElementById('modal-body');
+    
+    // Enhanced modal controls
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto'; // Re-enable scrolling
+    };
+    
+    closeBtn.onclick = closeModal;
+    modal.onclick = (e) => {
+      if (e.target === modal) closeModal();
+    };
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        closeModal();
       }
     });
-    return Array.from(set).filter(Boolean).sort();
+    
+    this.modal = modal;
+    this.modalBody = modalBody;
   }
 
-  // Populate dropdowns
-  function populateDropdown(select, values, label) {
-    select.innerHTML = `<option value="">All ${label}</option>` +
-      values.map(v => `<option value="${v}">${v}</option>`).join('');
+  // Helper: Get unique values for dropdowns
+  getUniqueValues(fieldName) {
+    // Use cache for expensive operations
+    const cacheKey = `unique_${fieldName}`;
+    if (this.searchCache.has(cacheKey)) {
+      return this.searchCache.get(cacheKey);
+    }
+    
+    const uniqueValues = new Set();
+    this.huntsData.forEach(hunt => {
+      switch (fieldName) {
+        case 'tags':
+          (hunt.tags || []).forEach(tag => uniqueValues.add(tag));
+          break;
+        case 'tactic':
+          if (hunt.tactic) {
+            hunt.tactic.split(',').map(tactic => tactic.trim()).forEach(tactic => {
+              if (tactic) uniqueValues.add(tactic);
+            });
+          }
+          break;
+        default:
+          if (hunt[fieldName]) uniqueValues.add(hunt[fieldName]);
+      }
+    });
+    
+    const result = Array.from(uniqueValues).filter(Boolean).sort();
+    this.searchCache.set(cacheKey, result);
+    return result;
   }
 
-  populateDropdown(tacticFilter, getUnique('tactic'), 'Tactics');
-  populateDropdown(tagFilter, getUnique('tags'), 'Tags');
+  function populateDropdown(selectElement, optionValues, labelText) {
+    selectElement.innerHTML = `<option value="">All ${labelText}</option>` +
+      optionValues.map(value => `<option value="${value}">${value}</option>`).join('');
+  }
+
+  populateDropdown(tacticFilter, getUniqueValues('tactic'), 'Tactics');
+  populateDropdown(tagFilter, getUniqueValues('tags'), 'Tags');
 
   // State
   let filteredHunts = [...HUNTS_DATA];
 
-  // Show hunt details in modal
   function showHuntDetails(hunt) {
-    modalBody.innerHTML = `
+    const modalContent = buildHuntDetailContent(hunt);
+    modalBody.innerHTML = modalContent;
+    modal.style.display = 'block';
+  }
+
+  function buildHuntDetailContent(hunt) {
+    const header = buildHuntHeader(hunt);
+    const sections = buildHuntSections(hunt);
+    const footer = buildHuntFooter(hunt);
+    return header + sections + footer;
+  }
+
+  function buildHuntHeader(hunt) {
+    return `
       <div class="hunt-detail-header">
         <div class="hunt-detail-id">${hunt.id}</div>
         <div class="hunt-detail-category">${hunt.category}</div>
       </div>
-      
       <h2 class="hunt-detail-title">${hunt.title}</h2>
-      
-      ${hunt.tactic ? `<div class="hunt-detail-tactic"><strong>Tactic:</strong> ${hunt.tactic}</div>` : ''}
-      
-      ${hunt.notes ? `<div class="hunt-detail-notes"><strong>Notes:</strong> ${hunt.notes}</div>` : ''}
-      
-      ${hunt.tags && hunt.tags.length ? `
-        <div class="hunt-detail-tags">
-          <strong>Tags:</strong>
-          ${hunt.tags.map(tag => `<span class="hunt-tag">#${tag}</span>`).join('')}
-        </div>
-      ` : ''}
-      
-      ${hunt.submitter && hunt.submitter.name ? `
-        <div class="hunt-detail-submitter">
-          <strong>Submitter:</strong>
-          ${hunt.submitter.link ? 
-            `<a href="${hunt.submitter.link}" target="_blank">${hunt.submitter.name}</a>` : 
-            hunt.submitter.name}
-        </div>
-      ` : ''}
-      
-      ${hunt.why ? `
-        <div class="hunt-detail-why">
-          <h3>Why</h3>
-          <div class="hunt-detail-content">${hunt.why.replace(/\n/g, '<br>')}</div>
-        </div>
-      ` : ''}
-      
-      ${hunt.references ? `
-        <div class="hunt-detail-references">
-          <h3>References</h3>
-          <div class="hunt-detail-content">${hunt.references.replace(/\n/g, '<br>')}</div>
-        </div>
-      ` : ''}
-      
+    `;
+  }
+
+  function buildHuntSections(hunt) {
+    let sections = '';
+    
+    if (hunt.tactic) {
+      sections += `<div class="hunt-detail-tactic"><strong>Tactic:</strong> ${hunt.tactic}</div>`;
+    }
+    
+    if (hunt.notes) {
+      sections += `<div class="hunt-detail-notes"><strong>Notes:</strong> ${hunt.notes}</div>`;
+    }
+    
+    if (hunt.tags && hunt.tags.length) {
+      const tagElements = hunt.tags.map(tag => `<span class="hunt-tag">#${tag}</span>`).join('');
+      sections += `<div class="hunt-detail-tags"><strong>Tags:</strong> ${tagElements}</div>`;
+    }
+    
+    if (hunt.submitter && hunt.submitter.name) {
+      const submitterLink = hunt.submitter.link ? 
+        `<a href="${hunt.submitter.link}" target="_blank">${hunt.submitter.name}</a>` : 
+        hunt.submitter.name;
+      sections += `<div class="hunt-detail-submitter"><strong>Submitter:</strong> ${submitterLink}</div>`;
+    }
+    
+    if (hunt.why) {
+      sections += `<div class="hunt-detail-why"><h3>Why</h3><div class="hunt-detail-content">${hunt.why.replace(/\n/g, '<br>')}</div></div>`;
+    }
+    
+    if (hunt.references) {
+      sections += `<div class="hunt-detail-references"><h3>References</h3><div class="hunt-detail-content">${hunt.references.replace(/\n/g, '<br>')}</div></div>`;
+    }
+    
+    return sections;
+  }
+
+  function buildHuntFooter(hunt) {
+    return `
       <div class="hunt-detail-footer">
         <a href="https://github.com/THORCollective/HEARTH/blob/main/${hunt.file_path}" target="_blank" class="btn">
           View Source
         </a>
       </div>
     `;
-    modal.style.display = 'block';
   }
 
   // Render hunts
@@ -212,31 +284,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Filtering logic
   function filterAndSortHunts() {
-    const search = (searchInput.value || '').toLowerCase();
-    const category = categoryFilter.value;
-    const tactic = tacticFilter.value;
-    const tag = tagFilter.value;
+    const searchTerm = (searchInput.value || '').toLowerCase();
+    const selectedCategory = categoryFilter.value;
+    const selectedTactic = tacticFilter.value;
+    const selectedTag = tagFilter.value;
+    
     filteredHunts = HUNTS_DATA.filter(hunt => {
-      // Search
-      let matchesSearch = true;
-      if (search) {
-        const haystack = [hunt.id, hunt.title, hunt.tactic, hunt.notes, (hunt.tags || []).join(' '), (hunt.submitter && hunt.submitter.name) || '']
-          .join(' ').toLowerCase();
-        matchesSearch = haystack.includes(search);
-      }
-      // Category
-      let matchesCategory = !category || hunt.category === category;
-      // Tactic
-      let matchesTactic = !tactic || (hunt.tactic && hunt.tactic.split(',').map(t => t.trim()).includes(tactic));
-      // Tag
-      let matchesTag = !tag || (hunt.tags && hunt.tags.includes(tag));
-      return matchesSearch && matchesCategory && matchesTactic && matchesTag;
+      return matchesSearchCriteria(hunt, searchTerm) &&
+             matchesCategory(hunt, selectedCategory) &&
+             matchesTactic(hunt, selectedTactic) &&
+             matchesTag(hunt, selectedTag);
     });
 
     const sortedHunts = sortHunts(filteredHunts);
     renderHunts(sortedHunts);
+  }
+
+  function matchesSearchCriteria(hunt, searchTerm) {
+    if (!searchTerm) return true;
+    
+    const searchableContent = [
+      hunt.id,
+      hunt.title,
+      hunt.tactic,
+      hunt.notes,
+      (hunt.tags || []).join(' '),
+      (hunt.submitter && hunt.submitter.name) || ''
+    ].join(' ').toLowerCase();
+    
+    return searchableContent.includes(searchTerm);
+  }
+
+  function matchesCategory(hunt, category) {
+    return !category || hunt.category === category;
+  }
+
+  function matchesTactic(hunt, tactic) {
+    return !tactic || (hunt.tactic && hunt.tactic.split(',').map(tacticItem => tacticItem.trim()).includes(tactic));
+  }
+
+  function matchesTag(hunt, tag) {
+    return !tag || (hunt.tags && hunt.tags.includes(tag));
   }
 
   // Event listeners

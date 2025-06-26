@@ -2,26 +2,25 @@ import os
 from pathlib import Path
 import re
 from collections import Counter
+from hunt_parser_utils import (
+    find_hunt_files,
+    find_table_header_line,
+    extract_table_cells,
+    clean_markdown_formatting,
+    extract_submitter_info,
+    find_submitter_column_index
+)
 
-def parse_submitter(cell_content):
+def extract_contributor_name(cell_content):
     """Extracts the contributor's name from a markdown link or plain text."""
-    match = re.search(r'\[([^\]]+)\]', cell_content)
-    if match:
-        return match.group(1).strip()
-    return cell_content.strip()
+    submitter_info = extract_submitter_info(cell_content)
+    return submitter_info['name'] if submitter_info['name'] else cell_content.strip()
 
-def get_hunt_files():
-    """Finds all hunt files in the project."""
-    base_path = Path(".")
-    hunt_dirs = ["Flames", "Embers", "Alchemy"]
-    all_hunts = []
-    for directory in hunt_dirs:
-        all_hunts.extend(base_path.glob(f"{directory}/*.md"))
-    return all_hunts
+# Using shared utility function - no need to redefine
 
 def generate_leaderboard():
     """Scans all hunts, counts contributions, and generates a new Contributors.md file."""
-    all_hunts = get_hunt_files()
+    all_hunts = find_hunt_files()
     contributors = []
 
     for hunt_file in all_hunts:
@@ -70,28 +69,35 @@ def generate_leaderboard():
                 
             submitter_cell = data_cells[submitter_index]
             
-            submitter_name = parse_submitter(submitter_cell)
-            if submitter_name and submitter_name != "hearth-auto-intel":
-                contributors.append(submitter_name)
+            contributor_name = extract_contributor_name(submitter_cell)
+            if contributor_name and contributor_name != "hearth-auto-intel":
+                contributors.append(contributor_name)
         except Exception as e:
             print(f"Could not process file {hunt_file}: {e}")
 
-    counts = Counter(contributors)
-    sorted_contributors = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+    contribution_counts = Counter(contributors)
+    sorted_contributors = sorted(contribution_counts.items(), key=lambda contributor_data: contributor_data[1], reverse=True)
 
-    # Generate the new Markdown file
-    md_content = "# 🔥 HEARTH Contributors Leaderboard 🔥\n\n"
-    md_content += "Everyone listed below has submitted ideas that have been added to HEARTH. This list is automatically generated and updated monthly. Thank you for stoking the fire that warms our community!\n\n"
-    md_content += "| Rank | Contributor | Hunts Submitted |\n"
-    md_content += "|------|-------------|-----------------|\n"
-
-    for i, (name, count) in enumerate(sorted_contributors):
-        md_content += f"| {i+1} | {name} | {count} |\n"
-
-    # Overwrite the existing file
-    leaderboard_path = Path("Keepers/Contributors.md")
-    leaderboard_path.write_text(md_content)
+    markdown_content = build_leaderboard_markdown(sorted_contributors)
+    save_leaderboard_file(markdown_content)
     print("✅ Successfully generated new Contributors.md")
+
+def build_leaderboard_markdown(sorted_contributors):
+    """Build the markdown content for the leaderboard."""
+    header = "# 🔥 HEARTH Contributors Leaderboard 🔥\n\n"
+    description = "Everyone listed below has submitted ideas that have been added to HEARTH. This list is automatically generated and updated monthly. Thank you for stoking the fire that warms our community!\n\n"
+    table_header = "| Rank | Contributor | Hunts Submitted |\n|------|-------------|-----------------|\n"
+    
+    table_rows = ""
+    for rank, (contributor_name, hunt_count) in enumerate(sorted_contributors, 1):
+        table_rows += f"| {rank} | {contributor_name} | {hunt_count} |\n"
+    
+    return header + description + table_header + table_rows
+
+def save_leaderboard_file(markdown_content):
+    """Save the leaderboard content to file."""
+    leaderboard_file_path = Path("Keepers/Contributors.md")
+    leaderboard_file_path.write_text(markdown_content)
 
 if __name__ == "__main__":
     generate_leaderboard() 

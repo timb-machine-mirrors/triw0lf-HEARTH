@@ -7,105 +7,119 @@ import os
 import re
 import json
 from pathlib import Path
+from hunt_parser_utils import (
+    find_table_header_line,
+    clean_markdown_formatting,
+    extract_submitter_info,
+    extract_content_section,
+    parse_tag_list
+)
 
 def parse_markdown_file(file_path, category):
     """Parse a single markdown hunt file and extract relevant data."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
+        content = read_file_content(file_path)
         hunt_id = file_path.stem
+        
         if hunt_id.lower() == 'secret':
             return None
         
-        # Find the table header row - be more flexible with variations
-        lines = content.split('\n')
-        table_start = None
-        for i, line in enumerate(lines):
-            # Look for variations of the header: "Hunt", "Idea" or "Hypothesis", "Tactic", "Notes", "Tags", "Submitter"
-            if ('Hunt' in line and 
-                ('Idea' in line or 'Hypothesis' in line) and 
-                'Tactic' in line and 
-                'Notes' in line and 
-                'Tags' in line and 
-                'Submitter' in line):
-                table_start = i
-                break
+        table_data = extract_table_data(content)
+        sections = extract_content_sections(content)
+        submitter_info = extract_submitter_info(table_data.get('submitter', ''))
         
-        if table_start is not None and table_start + 2 < len(lines):
-            data_row = lines[table_start + 2]
-            cells = [cell.strip() for cell in data_row.split('|') if cell.strip()]
-            # The columns are: Hunt #, Idea/Hypothesis, Tactic, Notes, Tags, Submitter
-            if len(cells) >= 6:
-                hunt_id_from_table = cells[0]
-                idea = cells[1]
-                tactic = cells[2]
-                notes = cells[3]
-                tags = cells[4]
-                submitter = cells[5]
-            else:
-                hunt_id_from_table = hunt_id
-                idea = ''
-                tactic = ''
-                notes = ''
-                tags = ''
-                submitter = ''
-        else:
-            hunt_id_from_table = hunt_id
-            idea = ''
-            tactic = ''
-            notes = ''
-            tags = ''
-            submitter = ''
-        
-        # Clean up extracted data
-        hunt_id_from_table = hunt_id_from_table.replace('**', '').strip()
-        idea = idea.replace('**', '').strip()
-        tactic = tactic.replace('**', '').strip()
-        notes = notes.replace('**', '').strip()
-        tags = tags.replace('**', '').strip()
-        submitter = submitter.replace('**', '').strip()
-        
-        # Parse tags as array (remove #, split by space)
-        tag_list = [t.lstrip('#') for t in tags.split() if t.startswith('#')]
-        
-        # Parse submitter
-        submitter_name = ''
-        submitter_link = ''
-        if submitter:
-            link_match = re.search(r'\[([^\]]+)\]\(([^)]+)\)', submitter)
-            if link_match:
-                submitter_name = link_match.group(1)
-                submitter_link = link_match.group(2)
-            else:
-                submitter_name = submitter.strip()
-        
-        # Extract Why section
-        why_match = re.search(r'## Why\s*\n(.*?)(?=\n##|\n$)', content, re.MULTILINE | re.DOTALL)
-        why_section = why_match.group(1).strip() if why_match else ''
-        
-        # Extract References section
-        ref_match = re.search(r'## References\s*\n(.*?)(?=\n##|\n$)', content, re.MULTILINE | re.DOTALL)
-        ref_section = ref_match.group(1).strip() if ref_match else ''
-        
-        return {
-            "id": hunt_id_from_table,
-            "category": category,
-            "title": idea,
-            "tactic": tactic,
-            "notes": notes,
-            "tags": tag_list,
-            "submitter": {
-                "name": submitter_name,
-                "link": submitter_link
-            },
-            "why": why_section,
-            "references": ref_section,
-            "file_path": str(file_path.relative_to(Path(__file__).parent.parent))
-        }
+        return build_hunt_object(
+            hunt_id=table_data.get('hunt_id', hunt_id),
+            category=category,
+            table_data=table_data,
+            sections=sections,
+            submitter_info=submitter_info,
+            file_path=file_path
+        )
     except Exception as e:
         print(f"Error parsing {file_path}: {e}")
         return None
+
+def read_file_content(file_path):
+    """Read and return file content."""
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return file.read()
+
+def extract_table_data(content):
+    """Extract data from markdown table."""
+    lines = content.split('\n')
+    table_start_index = find_table_header_line(lines)
+    
+    if table_start_index is None:
+        return get_empty_table_data()
+    
+    return parse_table_row(lines, table_start_index)
+
+# Using shared utility function from hunt_parser_utils
+
+def parse_table_row(lines, table_start_index):
+    """Parse the data row from the table."""
+    data_row_index = table_start_index + 2
+    
+    if data_row_index >= len(lines):
+        return get_empty_table_data()
+    
+    data_row = lines[data_row_index]
+    cells = [cell.strip() for cell in data_row.split('|') if cell.strip()]
+    
+    if len(cells) >= 6:
+        return {
+            'hunt_id': clean_markdown_formatting(cells[0]),
+            'idea': clean_markdown_formatting(cells[1]),
+            'tactic': clean_markdown_formatting(cells[2]),
+            'notes': clean_markdown_formatting(cells[3]),
+            'tags': clean_markdown_formatting(cells[4]),
+            'submitter': clean_markdown_formatting(cells[5])
+        }
+    
+    return get_empty_table_data()
+
+def get_empty_table_data():
+    """Return empty table data structure."""
+    return {
+        'hunt_id': '',
+        'idea': '',
+        'tactic': '',
+        'notes': '',
+        'tags': '',
+        'submitter': ''
+    }
+
+def clean_markdown_formatting(text):
+    """Remove markdown formatting from text."""
+    return text.replace('**', '').strip()
+
+def extract_content_sections(content):
+    """Extract Why and References sections from content."""
+    why_section = extract_content_section(content, 'Why')
+    references_section = extract_content_section(content, 'References')
+    
+    return {
+        'why': why_section,
+        'references': references_section
+    }
+
+# Using shared utility functions
+
+def build_hunt_object(hunt_id, category, table_data, sections, submitter_info, file_path):
+    """Build the final hunt object."""
+    return {
+        "id": hunt_id,
+        "category": category,
+        "title": table_data['idea'],
+        "tactic": table_data['tactic'],
+        "notes": table_data['notes'],
+        "tags": parse_tag_list(table_data['tags']),
+        "submitter": submitter_info,
+        "why": sections['why'],
+        "references": sections['references'],
+        "file_path": str(file_path.relative_to(Path(__file__).parent.parent))
+    }
 
 def main():
     """Main function to parse all hunt files and generate JSON."""
