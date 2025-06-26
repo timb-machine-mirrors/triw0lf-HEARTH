@@ -41,6 +41,12 @@ class HearthConfig:
     ai_temperature: float = 0.2
     ai_max_tokens: int = 2000
     
+    # Similarity detection settings
+    hypothesis_similarity_threshold: float = 0.75
+    enable_similarity_checking: bool = True
+    max_generation_attempts: int = 5
+    similarity_cache_ttl: int = 3600
+    
     # GitHub settings
     github_repo_url: str = "https://github.com/THORCollective/HEARTH"
     github_branch: str = "main"
