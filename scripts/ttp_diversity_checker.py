@@ -96,7 +96,14 @@ class TTProvExtractor:
         'command and control': 'T1071',
         'data exfiltration': 'T1041',
         'ransomware': 'T1486',
-        'encryption': 'T1486'
+        'encryption': 'T1486',
+        'proxy': 'T1090',
+        'socks': 'T1090.001',
+        'tunnel': 'T1090',
+        'tunneling': 'T1090',
+        'chisel': 'T1090',
+        'ngrok': 'T1090',
+        'port forwarding': 'T1090'
     }
     
     # Common tools/malware
@@ -106,7 +113,9 @@ class TTProvExtractor:
         'mimikatz', 'cobalt strike', 'metasploit', 'empire', 'bloodhound',
         'sharphound', 'rubeus', 'kerberoast', 'invoke-mimikatz', 'crackmapexec',
         'psexec', 'winexe', 'impacket', 'nmap', 'masscan', 'burp suite',
-        'sqlmap', 'hashcat', 'john', 'hydra', 'medusa', 'nikto', 'dirb'
+        'sqlmap', 'hashcat', 'john', 'hydra', 'medusa', 'nikto', 'dirb',
+        'chisel', 'ngrok', 'frp', 'proxychains', 'socat', 'netcat', 'nc',
+        'stunnel', 'tor', 'proxifier', 'dante', 'ssh', 'plink'
     }
     
     # Target systems/services
@@ -240,6 +249,16 @@ class TTProvExtractor:
             procedures.add('process injection')
         if 'memory' in text and 'inject' in text:
             procedures.add('memory injection')
+        if 'socks' in text and 'proxy' in text:
+            procedures.add('socks proxy creation')
+        if 'tunnel' in text and ('bypass' in text or 'conceal' in text):
+            procedures.add('network tunneling bypass')
+        if 'chisel' in text:
+            procedures.add('chisel tunneling tool usage')
+        if 'proxy' in text and 'c2' in text:
+            procedures.add('proxy-based c2 communication')
+        if 'port forwarding' in text:
+            procedures.add('port forwarding technique')
         
         return procedures
     
