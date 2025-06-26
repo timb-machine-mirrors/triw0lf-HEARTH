@@ -290,6 +290,11 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
         if TTP_DIVERSITY_AVAILABLE:
             print("🎯 Using TTP diversity system for generation")
             deduplicator = get_hypothesis_deduplicator()
+            
+            # Load existing hunts to build TTP context for this session
+            if is_regeneration:
+                print("🔄 Loading existing hunts to build TTP diversity context...")
+                _load_existing_hunts_for_ttp_context(deduplicator)
         else:
             print("⚠️ TTP diversity system unavailable, using basic generation")
             return generate_hunt_content_basic(summary, cti_source_url, submitter_credit, is_regeneration)
@@ -358,15 +363,31 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
                 hypothesis = hypothesis.lstrip('#').strip()
             
             # Extract tactic from the generated content (look for tactic in table)
-            tactic = "Unknown"
+            tactic = "Command and Control"  # Default for most cases, can be improved
             lines = cleaned_content.split('\n')
             for line in lines:
-                if '|' in line and 'tactic' in line.lower():
+                if '|' in line and any(word in line.lower() for word in ['execution', 'persistence', 'privilege', 'defense', 'credential', 'discovery', 'lateral', 'collection', 'command', 'exfiltration', 'impact']):
                     # Found tactic in table, extract it
                     parts = [p.strip() for p in line.split('|')]
                     if len(parts) >= 4:  # Hunt#, Hypothesis, Tactic, Notes...
-                        tactic = parts[2] if parts[2] else "Unknown"
-                        break
+                        potential_tactic = parts[2].strip() if len(parts) > 2 and parts[2].strip() else None
+                        if potential_tactic and potential_tactic.lower() != "tactic":
+                            tactic = potential_tactic
+                            break
+            
+            # If still unknown, try to infer from hypothesis content
+            if tactic == "Unknown" or not tactic:
+                hypothesis_lower = hypothesis.lower()
+                if any(word in hypothesis_lower for word in ['tunnel', 'proxy', 'socks', 'c2', 'command', 'control', 'communication']):
+                    tactic = "Command and Control"
+                elif any(word in hypothesis_lower for word in ['download', 'execute', 'run', 'launch', 'powershell', 'cmd']):
+                    tactic = "Execution"
+                elif any(word in hypothesis_lower for word in ['persist', 'startup', 'service', 'registry', 'scheduled']):
+                    tactic = "Persistence"
+                elif any(word in hypothesis_lower for word in ['credential', 'password', 'token', 'hash', 'mimikatz']):
+                    tactic = "Credential Access"
+                else:
+                    tactic = "Command and Control"  # Reasonable default
             
             print(f"🔍 Generated hypothesis: {hypothesis[:80]}...")
             print(f"🎯 Detected tactic: {tactic}")
@@ -440,6 +461,72 @@ def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_r
 def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
     """Generate hunt content (with TTP diversity if available)."""
     return generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration)
+
+def _load_existing_hunts_for_ttp_context(deduplicator):
+    """Load existing hunt hypotheses to build TTP diversity context."""
+    try:
+        from pathlib import Path
+        import re
+        
+        flames_dir = Path("Flames/")
+        if not flames_dir.exists():
+            print("   No Flames directory found, starting with empty TTP context")
+            return
+        
+        hunt_files = list(flames_dir.glob("H-*.md"))
+        if not hunt_files:
+            print("   No existing hunt files found, starting with empty TTP context")
+            return
+        
+        # Load recent hunts (last 10) to build context without overloading
+        recent_hunts = sorted(hunt_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]
+        
+        loaded_count = 0
+        for hunt_file in recent_hunts:
+            try:
+                content = hunt_file.read_text()
+                
+                # Extract hypothesis (first line after title)
+                lines = content.split('\n')
+                hypothesis = None
+                for line in lines:
+                    line = line.strip()
+                    if line and not line.startswith('#') and not line.startswith('|') and len(line) > 20:
+                        hypothesis = line
+                        break
+                
+                if not hypothesis:
+                    continue
+                
+                # Extract tactic from table
+                tactic = "Unknown"
+                for line in lines:
+                    if '|' in line and any(word in line.lower() for word in ['execution', 'persistence', 'command', 'defense']):
+                        parts = [p.strip() for p in line.split('|')]
+                        if len(parts) >= 4:
+                            potential_tactic = parts[2].strip() if len(parts) > 2 and parts[2].strip() else None
+                            if potential_tactic and potential_tactic.lower() not in ['tactic', '']:
+                                tactic = potential_tactic
+                                break
+                
+                # Add to TTP context (but don't return result to avoid spam)
+                deduplicator.check_hypothesis_uniqueness(hypothesis, tactic)
+                loaded_count += 1
+                
+            except Exception as e:
+                print(f"   Warning: Could not load {hunt_file.name}: {e}")
+                continue
+        
+        print(f"   📚 Loaded {loaded_count} existing hunts for TTP context")
+        
+        # Show current TTP diversity stats
+        stats = deduplicator.ttp_checker.get_stats()
+        if stats.get('total_attempts', 0) > 0:
+            print(f"   🎯 TTP Context: {stats['unique_tactics']} tactics, {stats['unique_techniques']} techniques")
+            print(f"   📋 Tactics in context: {', '.join(stats.get('tactics_used', [])[:5])}")
+        
+    except Exception as e:
+        print(f"   ⚠️ Error loading existing hunts: {e}")
 
 def read_file_content(file_path):
     """Read content from either PDF or text file."""

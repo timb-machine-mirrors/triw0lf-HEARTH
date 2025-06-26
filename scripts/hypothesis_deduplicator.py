@@ -69,7 +69,7 @@ class TTProvAwareDeduplicator:
         logger.info(f"TTP overlap score: {ttp_overlap.overlap_score:.2%}")
         
         # Determine if it's too similar based on TTP overlap
-        is_too_similar = ttp_overlap.is_too_similar(threshold=0.6)  # 60% TTP overlap threshold
+        is_too_similar = ttp_overlap.is_too_similar(threshold=0.5)  # 50% TTP overlap threshold (more sensitive)
         
         # Generate recommendation based on TTP analysis
         recommendation = self._generate_ttp_recommendation(ttp_overlap, is_too_similar)
@@ -79,7 +79,7 @@ class TTProvAwareDeduplicator:
         
         result = DeduplicationResult(
             is_duplicate=is_too_similar,
-            similarity_threshold=0.6,  # TTP overlap threshold
+            similarity_threshold=0.5,  # TTP overlap threshold (more sensitive)
             max_similarity_score=ttp_overlap.overlap_score,
             similar_hunts_count=1 if is_too_similar else 0,
             similar_hunts=[],

@@ -48,7 +48,7 @@ class TTProverlap:
     target_overlap: float
     explanation: str
     
-    def is_too_similar(self, threshold: float = 0.6) -> bool:
+    def is_too_similar(self, threshold: float = 0.5) -> bool:
         """Check if TTPs are too similar based on threshold."""
         return self.overlap_score > threshold
 
@@ -328,10 +328,10 @@ class TTProvDiversityChecker:
                 max_overlap = overlap
         
         # Only add to history if TTPs are diverse enough (not too similar)
-        if max_overlap is None or not max_overlap.is_too_similar(threshold=0.6):
+        if max_overlap is None or not max_overlap.is_too_similar(threshold=0.5):
             self.generation_history.append(new_ttps)
             logger.info(f"Added diverse TTPs to history. Total attempts: {len(self.generation_history)}")
-        elif max_overlap and max_overlap.is_too_similar(threshold=0.6):
+        elif max_overlap and max_overlap.is_too_similar(threshold=0.5):
             logger.warning(f"Rejected similar TTPs. Overlap: {max_overlap.overlap_score:.1%}")
         
         return max_overlap or TTProverlap(
