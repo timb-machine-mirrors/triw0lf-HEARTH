@@ -294,15 +294,27 @@ def generate_enhanced_duplicate_comment(dedup_result, new_hunt_info: Dict[str, A
             comment += f"**Analysis Details:**\n"
             comment += f"- Similarity threshold: {dedup_result.similarity_threshold:.1%}\n"
             comment += f"- Highest similarity score: {dedup_result.max_similarity_score:.1%}\n"
-            comment += f"- Hunts analyzed: {len(dedup_result.similar_hunts) if hasattr(dedup_result, 'total_hunts') else 'N/A'}\n\n"
+            comment += f"- Hunts analyzed: {len(dedup_result.similar_hunts)}\n\n"
+            
+            # Show top 3 similar hunts even if below threshold
+            if dedup_result.similar_hunts:
+                comment += "**Top Similar Hunts (Below Threshold):**\n\n"
+                comment += format_similar_hunts_list(dedup_result.similar_hunts[:3])
         else:
             comment = f"⚠️ **Enhanced Duplicate Check - {dedup_result.similar_hunts_count} Similar Hunt(s) Found**\n\n"
             comment += f"**Similarity Analysis:**\n"
             comment += f"- Threshold: {dedup_result.similarity_threshold:.1%}\n"
             comment += f"- Highest similarity: {dedup_result.max_similarity_score:.1%}\n\n"
             
-            # Add detailed report
-            comment += dedup_result.detailed_report + "\n\n"
+            # Show top 3 similar hunts with details
+            if dedup_result.similar_hunts:
+                comment += "**Top 3 Most Similar Existing Hunts:**\n\n"
+                comment += format_similar_hunts_list(dedup_result.similar_hunts[:3])
+            
+            # Add detailed report if available
+            if hasattr(dedup_result, 'detailed_report') and dedup_result.detailed_report:
+                comment += "\n**Detailed Analysis:**\n"
+                comment += dedup_result.detailed_report + "\n\n"
         
         # Add recommendation
         comment += f"**🤖 Recommendation:** {dedup_result.recommendation}\n\n"
@@ -310,6 +322,7 @@ def generate_enhanced_duplicate_comment(dedup_result, new_hunt_info: Dict[str, A
         # Add methodology note
         comment += "---\n"
         comment += "*This analysis was performed using enhanced similarity detection with multiple algorithms:*\n"
+        comment += "- TTP-aware similarity (Tactics, Techniques, Procedures)\n" 
         comment += "- Lexical similarity (Jaccard, Cosine, Levenshtein)\n"
         comment += "- Semantic similarity (Concept mapping, MITRE ATT&CK tactics)\n"
         comment += "- Structural similarity (Sentence patterns, Length analysis)\n"
@@ -322,6 +335,46 @@ def generate_enhanced_duplicate_comment(dedup_result, new_hunt_info: Dict[str, A
     except Exception as error:
         logger.error(f"Error generating enhanced comment: {error}")
         return f"❌ Error generating similarity analysis comment: {error}"
+
+def format_similar_hunts_list(similar_hunts: List[Dict[str, Any]]) -> str:
+    """Format the list of similar hunts for display."""
+    if not similar_hunts:
+        return "No similar hunts found.\n\n"
+    
+    formatted_list = ""
+    repo_url = f"{os.getenv('GITHUB_SERVER_URL', 'https://github.com')}/{os.getenv('GITHUB_REPOSITORY')}"
+    branch = os.getenv('GITHUB_REF_NAME', 'main')
+    
+    for i, hunt in enumerate(similar_hunts, 1):
+        similarity_score = hunt.get('similarity_score', 0)
+        filename = hunt.get('filename', 'Unknown')
+        filepath = hunt.get('filepath', '')
+        hypothesis = hunt.get('hypothesis', 'No hypothesis available')
+        tactic = hunt.get('tactic', 'Unknown')
+        
+        # Determine similarity level and emoji
+        if similarity_score >= 80:
+            emoji = "🔴"
+            level = "HIGH"
+        elif similarity_score >= 60:
+            emoji = "🟡" 
+            level = "MODERATE"
+        else:
+            emoji = "🟢"
+            level = "LOW"
+        
+        # Create file link if possible
+        if filepath:
+            file_url = f"{repo_url}/blob/{branch}/{filepath}"
+            hunt_link = f"[{filename}]({file_url})"
+        else:
+            hunt_link = filename
+        
+        formatted_list += f"{emoji} **{hunt_link}** ({similarity_score:.1f}% similarity - {level})\n"
+        formatted_list += f"   - **Tactic:** {tactic}\n"
+        formatted_list += f"   - **Hypothesis:** {hypothesis[:100]}{'...' if len(hypothesis) > 100 else ''}\n\n"
+    
+    return formatted_list
 
 def check_duplicates_for_new_submission(new_hunt_content, new_hunt_filename):
     """Main function to check for duplicates in a new submission."""

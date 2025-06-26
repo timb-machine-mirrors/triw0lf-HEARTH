@@ -63,13 +63,24 @@ class TTProvAwareDeduplicator:
         """Check if hypothesis has diverse TTPs from previous attempts."""
         logger.info(f"Checking TTP diversity for: {new_hypothesis[:50]}...")
         
+        # Load and compare against existing hunt files
+        similar_hunts = self._find_similar_existing_hunts(new_hypothesis, tactic)
+        
         # Check TTP diversity against previous generation attempts
         ttp_overlap = self.ttp_checker.check_ttp_diversity(new_hypothesis, tactic)
         
         logger.info(f"TTP overlap score: {ttp_overlap.overlap_score:.2%}")
         
-        # Determine if it's too similar based on TTP overlap
+        # Determine if it's too similar based on TTP overlap or existing hunts
+        max_similarity_score = ttp_overlap.overlap_score
         is_too_similar = ttp_overlap.is_too_similar(threshold=0.5)  # 50% TTP overlap threshold (more sensitive)
+        
+        # Also check similarity against existing hunt files
+        if similar_hunts:
+            max_file_similarity = max(hunt.get('similarity_score', 0) for hunt in similar_hunts) / 100.0
+            if max_file_similarity > max_similarity_score:
+                max_similarity_score = max_file_similarity
+                is_too_similar = max_file_similarity > 0.6  # 60% threshold for file similarity
         
         # Generate recommendation based on TTP analysis
         recommendation = self._generate_ttp_recommendation(ttp_overlap, is_too_similar)
@@ -80,15 +91,16 @@ class TTProvAwareDeduplicator:
         result = DeduplicationResult(
             is_duplicate=is_too_similar,
             similarity_threshold=0.5,  # TTP overlap threshold (more sensitive)
-            max_similarity_score=ttp_overlap.overlap_score,
-            similar_hunts_count=1 if is_too_similar else 0,
-            similar_hunts=[],
+            max_similarity_score=max_similarity_score,
+            similar_hunts_count=len([h for h in similar_hunts if h.get('similarity_score', 0) > 50]),
+            similar_hunts=similar_hunts,
             recommendation=recommendation,
             detailed_report=detailed_report,
             ttp_overlap=ttp_overlap
         )
         
         logger.info(f"TTP diversity check: {'SIMILAR TTPs' if is_too_similar else 'DIVERSE TTPs'}")
+        logger.info(f"Found {len(similar_hunts)} similar existing hunts")
         return result
     
     def generate_unique_hypothesis(self, generation_prompt: str, max_attempts: int = 5,
@@ -266,6 +278,118 @@ Generate a hypothesis that covers completely different Tactics, Techniques, and 
             logger.warning(f"Error generating TTP report: {error}")
             return f"TTP analysis completed with overlap score: {ttp_overlap.overlap_score:.1%}"
     
+    def _find_similar_existing_hunts(self, new_hypothesis: str, tactic: str = "") -> List[Dict[str, Any]]:
+        """Find similar existing hunt files and calculate similarity scores."""
+        try:
+            from pathlib import Path
+            import re
+            
+            similar_hunts = []
+            hunt_directories = ["Flames", "Embers", "Alchemy"]
+            
+            for directory_name in hunt_directories:
+                directory_path = Path(directory_name)
+                if not directory_path.exists():
+                    continue
+                    
+                hunt_files = list(directory_path.glob("*.md"))
+                for hunt_file in hunt_files:
+                    try:
+                        content = hunt_file.read_text()
+                        hunt_info = self._extract_hunt_info_from_content(content, str(hunt_file))
+                        
+                        if hunt_info and hunt_info['hypothesis']:
+                            # Calculate similarity score
+                            similarity_score = self._calculate_hypothesis_similarity(
+                                new_hypothesis, hunt_info['hypothesis'], tactic, hunt_info['tactic']
+                            )
+                            
+                            hunt_info['similarity_score'] = similarity_score
+                            similar_hunts.append(hunt_info)
+                            
+                    except Exception as e:
+                        logger.warning(f"Error processing hunt file {hunt_file}: {e}")
+                        continue
+            
+            # Sort by similarity score (highest first) and return top 10
+            similar_hunts.sort(key=lambda x: x.get('similarity_score', 0), reverse=True)
+            return similar_hunts[:10]
+            
+        except Exception as e:
+            logger.error(f"Error finding similar hunts: {e}")
+            return []
+    
+    def _extract_hunt_info_from_content(self, content: str, filepath: str) -> Dict[str, Any]:
+        """Extract hunt information from file content."""
+        lines = content.splitlines()
+        
+        # Extract hypothesis (first non-empty line that's not a header or table)
+        hypothesis = ""
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('#') and not line.startswith('|') and len(line) > 20:
+                hypothesis = line
+                break
+        
+        # Extract tactic from table
+        tactic = "Unknown"
+        for i, line in enumerate(lines):
+            if '|' in line and any(word in line.lower() for word in ['tactic', 'technique']):
+                # Look for data row after header
+                for j in range(i + 1, min(i + 3, len(lines))):
+                    if j < len(lines) and '|' in lines[j] and not lines[j].strip().startswith('|--'):
+                        parts = [p.strip() for p in lines[j].split('|') if p.strip()]
+                        if len(parts) >= 3:
+                            potential_tactic = parts[2] if len(parts) > 2 else ""
+                            if potential_tactic and potential_tactic.lower() not in ['tactic', '']:
+                                tactic = potential_tactic
+                                break
+                break
+        
+        return {
+            'filepath': filepath,
+            'filename': Path(filepath).name,
+            'hypothesis': hypothesis,
+            'tactic': tactic,
+            'content': content[:200]  # First 200 chars for context
+        }
+    
+    def _calculate_hypothesis_similarity(self, hyp1: str, hyp2: str, tactic1: str = "", tactic2: str = "") -> float:
+        """Calculate similarity score between two hypotheses."""
+        try:
+            # Basic text similarity (simple approach)
+            hyp1_lower = hyp1.lower()
+            hyp2_lower = hyp2.lower()
+            
+            # Jaccard similarity on words
+            words1 = set(hyp1_lower.split())
+            words2 = set(hyp2_lower.split())
+            
+            if not words1 and not words2:
+                return 0.0
+            if not words1 or not words2:
+                return 0.0
+            
+            intersection = words1.intersection(words2)
+            union = words1.union(words2)
+            jaccard_similarity = len(intersection) / len(union) if union else 0.0
+            
+            # Tactic bonus
+            tactic_bonus = 0.2 if tactic1.lower() == tactic2.lower() and tactic1.strip() else 0.0
+            
+            # Check for key technique words
+            technique_words = ['powershell', 'chisel', 'mimikatz', 'scheduled', 'registry', 'wmi', 'cmd', 'proxy', 'tunnel']
+            common_techniques = sum(1 for word in technique_words if word in hyp1_lower and word in hyp2_lower)
+            technique_bonus = min(0.3, common_techniques * 0.1)
+            
+            # Combined score (0-100 scale)
+            similarity = (jaccard_similarity + tactic_bonus + technique_bonus) * 100
+            return min(100.0, similarity)
+            
+        except Exception as e:
+            logger.warning(f"Error calculating similarity: {e}")
+            return 0.0
+
     def clear_generation_history(self):
         """Clear TTP generation history."""
         self.ttp_checker.clear_history()
