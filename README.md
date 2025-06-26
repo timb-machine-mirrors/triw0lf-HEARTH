@@ -89,7 +89,7 @@ HEARTH combines a simple frontend with a powerful, serverless backend built on G
 *   **Backend & Automation**:
     *   GitHub Actions
     *   Python
-    *   OpenAI API (GPT-4)
+    *   Claude (Anthropic) API and OpenAI API
 *   **Hosting**:
     *   GitHub Pages
 
