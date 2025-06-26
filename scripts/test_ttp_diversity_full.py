@@ -15,8 +15,9 @@ def test_ttp_diversity_system():
     print("🎯 Testing TTP Diversity System for Hypothesis Regeneration")
     print("=" * 70)
     
-    # Get the TTP-aware deduplicator
+    # Get the TTP-aware deduplicator and clear any previous history
     deduplicator = get_hypothesis_deduplicator()
+    deduplicator.clear_generation_history()
     
     # Test scenario: Generate multiple hypotheses and ensure TTP diversity
     print("\n📋 Scenario: AI is regenerating hunt hypotheses")
@@ -106,6 +107,7 @@ def test_generation_with_ai_simulation():
     print("=" * 70)
     
     deduplicator = get_hypothesis_deduplicator()
+    deduplicator.clear_generation_history()
     
     # Simulate AI generation function
     def mock_ai_generator(prompt: str, attempt: int) -> dict:

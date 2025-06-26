@@ -286,7 +286,7 @@ class TTProvDiversityChecker:
         new_ttps = self.extractor.extract_ttps(new_hypothesis, tactic)
         
         if not self.generation_history:
-            # First hypothesis - automatically diverse
+            # First hypothesis - automatically diverse, add to history
             self.generation_history.append(new_ttps)
             return TTProverlap(
                 overlap_score=0.0,
@@ -308,9 +308,12 @@ class TTProvDiversityChecker:
                 max_overlap_score = overlap.overlap_score
                 max_overlap = overlap
         
-        # Add to history if diverse enough
-        if max_overlap and not max_overlap.is_too_similar():
+        # Only add to history if TTPs are diverse enough (not too similar)
+        if max_overlap is None or not max_overlap.is_too_similar(threshold=0.6):
             self.generation_history.append(new_ttps)
+            logger.info(f"Added diverse TTPs to history. Total attempts: {len(self.generation_history)}")
+        elif max_overlap and max_overlap.is_too_similar(threshold=0.6):
+            logger.warning(f"Rejected similar TTPs. Overlap: {max_overlap.overlap_score:.1%}")
         
         return max_overlap or TTProverlap(
             overlap_score=0.0,

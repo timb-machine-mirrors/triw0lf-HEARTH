@@ -55,7 +55,7 @@ class TTProvAwareDeduplicator:
     
     def __init__(self, similarity_threshold: float = 0.75):
         self.similarity_threshold = similarity_threshold
-        self.ttp_checker = get_ttp_diversity_checker()
+        self.ttp_checker = get_ttp_diversity_checker()  # Use global instance
         logger.info("TTP-aware hypothesis deduplicator initialized")
     
     def check_hypothesis_uniqueness(self, new_hypothesis: str, tactic: str = "", 
