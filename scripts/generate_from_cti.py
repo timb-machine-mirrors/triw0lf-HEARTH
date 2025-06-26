@@ -16,12 +16,20 @@ try:
 except ImportError:
     CLAUDE_AVAILABLE = False
 
-# Import duplicate detection functionality
+# Import TTP diversity system
+try:
+    from hypothesis_deduplicator import get_hypothesis_deduplicator
+    TTP_DIVERSITY_AVAILABLE = True
+except ImportError:
+    print("⚠️ TTP diversity system not available. Skipping TTP diversity checks.")
+    TTP_DIVERSITY_AVAILABLE = False
+
+# Import legacy duplicate detection as backup
 try:
     from duplicate_detection import check_duplicates_for_new_submission
     DUPLICATE_DETECTION_AVAILABLE = True
 except ImportError:
-    print("⚠️ Duplicate detection module not available. Skipping duplicate checks.")
+    print("⚠️ Legacy duplicate detection module not available.")
     DUPLICATE_DETECTION_AVAILABLE = False
 
 load_dotenv()
@@ -271,13 +279,123 @@ def cleanup_hunt_body(ai_content):
 
     return "\n".join(lines[first_content_index:]).strip()
 
-def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
-    """Generate just the core content of a hunt from CTI text."""
+def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration=False, max_attempts=5):
+    """Generate hunt content with TTP diversity enforcement."""
     try:
         print("Starting CTI summarization...")
         summary = summarize_cti_with_map_reduce(cti_text)
         print("CTI summarization complete.")
         
+        # Initialize TTP diversity checker
+        if TTP_DIVERSITY_AVAILABLE:
+            print("🎯 Using TTP diversity system for generation")
+            deduplicator = get_hypothesis_deduplicator()
+        else:
+            print("⚠️ TTP diversity system unavailable, using basic generation")
+            return generate_hunt_content_basic(summary, cti_source_url, submitter_credit, is_regeneration)
+        
+        # Attempt generation with TTP diversity
+        for attempt in range(max_attempts):
+            print(f"🔄 Generation attempt {attempt + 1}/{max_attempts}")
+            
+            regeneration_instruction = ""
+            temperature = 0.2 + (attempt * 0.1)  # Increase temperature with attempts
+            
+            if is_regeneration or attempt > 0:
+                diversity_instruction = ""
+                if attempt > 0:
+                    # Get TTP diversity suggestions
+                    stats = deduplicator.ttp_checker.get_stats()
+                    used_tactics = stats.get('tactics_used', [])
+                    if used_tactics:
+                        diversity_instruction = f"CRITICAL: Previous attempts used these tactics: {', '.join(used_tactics)}. You MUST use a completely different MITRE ATT&CK tactic and technique. "
+                
+                regeneration_instruction = (
+                    f"{diversity_instruction}"
+                    "IMPORTANT: Generate a NEW and DIFFERENT hunt hypothesis with different TTPs. "
+                    "Analyze the CTI report and focus on a different MITRE ATT&CK technique, tactic, "
+                    "or unique attack vector that was not covered before. Ensure this covers "
+                    "completely different Tactics, Techniques, and Procedures (TTPs).\n\n"
+                )
+                temperature = min(0.7, temperature)
+
+            prompt = USER_TEMPLATE.format(
+                regeneration_instruction=regeneration_instruction,
+                cti_text=summary, 
+                cti_source_url=cti_source_url,
+                submitter_credit=submitter_credit
+            )
+            
+            # Generate content
+            hunt_content = None
+            if AI_PROVIDER == "claude":
+                full_prompt = f"\n\nHuman: {SYSTEM_PROMPT}\n\n{prompt}\n\nAssistant:"
+                response = anthropic_client.messages.create(
+                    model="claude-3-opus-20240229",
+                    max_tokens=1200,
+                    temperature=temperature,
+                    messages=[{"role": "user", "content": full_prompt}]
+                )
+                hunt_content = response.content[0].text.strip()
+            else:
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role":"system","content":SYSTEM_PROMPT},
+                             {"role":"user","content":prompt}],
+                    temperature=temperature,
+                    max_tokens=800
+                )
+                hunt_content = response.choices[0].message.content.strip()
+            
+            if not hunt_content:
+                print(f"❌ Attempt {attempt + 1} failed: No content generated")
+                continue
+            
+            # Extract hypothesis for TTP diversity check
+            cleaned_content = cleanup_hunt_body(hunt_content)
+            hypothesis = cleaned_content.split('\n')[0].strip()
+            if hypothesis.startswith('#'):
+                hypothesis = hypothesis.lstrip('#').strip()
+            
+            # Extract tactic from the generated content (look for tactic in table)
+            tactic = "Unknown"
+            lines = cleaned_content.split('\n')
+            for line in lines:
+                if '|' in line and 'tactic' in line.lower():
+                    # Found tactic in table, extract it
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 4:  # Hunt#, Hypothesis, Tactic, Notes...
+                        tactic = parts[2] if parts[2] else "Unknown"
+                        break
+            
+            print(f"🔍 Generated hypothesis: {hypothesis[:80]}...")
+            print(f"🎯 Detected tactic: {tactic}")
+            
+            # Check TTP diversity
+            ttp_result = deduplicator.check_hypothesis_uniqueness(hypothesis, tactic)
+            
+            if not ttp_result.is_duplicate:
+                print(f"✅ TTP diversity achieved on attempt {attempt + 1}")
+                print(f"   TTP overlap: {ttp_result.max_similarity_score:.1%}")
+                print(f"   Recommendation: {ttp_result.recommendation}")
+                return hunt_content
+            else:
+                print(f"❌ Attempt {attempt + 1} rejected: TTP overlap {ttp_result.max_similarity_score:.1%}")
+                print(f"   Reason: {ttp_result.recommendation}")
+                if ttp_result.ttp_overlap:
+                    print(f"   Analysis: {ttp_result.ttp_overlap.explanation}")
+                continue
+        
+        print(f"⚠️ All {max_attempts} attempts had similar TTPs. Using last attempt with warning.")
+        return hunt_content
+        
+    except Exception as e:
+        print(f"❌ Error in TTP-diverse generation: {str(e)}")
+        return None
+
+def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
+    """Basic hunt content generation without TTP diversity (fallback)."""
+    try:
         regeneration_instruction = ""
         temperature = 0.2
         if is_regeneration:
@@ -292,12 +410,11 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
 
         prompt = USER_TEMPLATE.format(
             regeneration_instruction=regeneration_instruction,
-            cti_text=summary, 
+            cti_text=cti_text, 
             cti_source_url=cti_source_url,
             submitter_credit=submitter_credit
         )
         if AI_PROVIDER == "claude":
-            # Claude prompt: system prompt as context, then user content
             full_prompt = f"\n\nHuman: {SYSTEM_PROMPT}\n\n{prompt}\n\nAssistant:"
             response = anthropic_client.messages.create(
                 model="claude-3-opus-20240229",
@@ -318,6 +435,11 @@ def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regener
     except Exception as e:
         print(f"❌ Error generating hunt content: {str(e)}")
         return None
+
+# Alias for backward compatibility
+def generate_hunt_content(cti_text, cti_source_url, submitter_credit, is_regeneration=False):
+    """Generate hunt content (with TTP diversity if available)."""
+    return generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter_credit, is_regeneration)
 
 def read_file_content(file_path):
     """Read content from either PDF or text file."""
@@ -429,20 +551,35 @@ if __name__ == "__main__":
                     print(hypothesis, file=f)
                     print(f'EOF', file=f)
 
-            # 7. Run duplicate detection
+            # 7. Run TTP diversity analysis and legacy duplicate detection
+            diversity_analysis = "✅ TTP diversity system used during generation"
+            if TTP_DIVERSITY_AVAILABLE:
+                print("🎯 Getting TTP diversity statistics...")
+                deduplicator = get_hypothesis_deduplicator()
+                stats = deduplicator.ttp_checker.get_stats()
+                diversity_analysis = f"""🎯 TTP Diversity Analysis:
+- Total unique hypotheses in session: {stats.get('total_attempts', 0)}
+- Unique tactics covered: {stats.get('unique_tactics', 0)}
+- Unique techniques covered: {stats.get('unique_techniques', 0)}
+- Tactics used: {', '.join(stats.get('tactics_used', []))}
+- Generated with TTP diversity enforcement to prevent similar TTPs"""
+            
             if DUPLICATE_DETECTION_AVAILABLE:
-                print("🔍 Running duplicate detection...")
+                print("🔍 Running legacy duplicate detection...")
                 duplicate_analysis = check_duplicates_for_new_submission(final_content, out_md_path.name)
-                print("Duplicate detection complete.")
-                
-                # Add duplicate detection result to GitHub output
-                if 'GITHUB_OUTPUT' in os.environ:
-                    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                        print(f'DUPLICATE_ANALYSIS<<EOF', file=f)
-                        print(duplicate_analysis, file=f)
-                        print(f'EOF', file=f)
+                print("Legacy duplicate detection complete.")
             else:
-                duplicate_analysis = "⚠️ Duplicate detection not available."
+                duplicate_analysis = "⚠️ Legacy duplicate detection not available."
+                
+            # Add analysis results to GitHub output
+            if 'GITHUB_OUTPUT' in os.environ:
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    print(f'TTP_DIVERSITY_ANALYSIS<<EOF', file=f)
+                    print(diversity_analysis, file=f)
+                    print(f'EOF', file=f)
+                    print(f'DUPLICATE_ANALYSIS<<EOF', file=f)
+                    print(duplicate_analysis, file=f)
+                    print(f'EOF', file=f)
         else:
             print(f"Could not generate hunt content. Skipping file creation.")
     else:
