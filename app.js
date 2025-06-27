@@ -107,31 +107,36 @@ class HearthApp {
     return result;
   }
 
-  function populateDropdown(selectElement, optionValues, labelText) {
+  // Helper: Populate dropdown with values
+  populateDropdown(selectElement, optionValues, labelText) {
     selectElement.innerHTML = `<option value="">All ${labelText}</option>` +
       optionValues.map(value => `<option value="${value}">${value}</option>`).join('');
   }
 
-  populateDropdown(tacticFilter, getUniqueValues('tactic'), 'Tactics');
-  populateDropdown(tagFilter, getUniqueValues('tags'), 'Tags');
-
-  // State
-  let filteredHunts = [...HUNTS_DATA];
-
-  function showHuntDetails(hunt) {
-    const modalContent = buildHuntDetailContent(hunt);
-    modalBody.innerHTML = modalContent;
-    modal.style.display = 'block';
+  // Initialize dropdowns
+  initializeDropdowns() {
+    this.populateDropdown(this.elements.tacticFilter, this.getUniqueValues('tactic'), 'Tactics');
+    this.populateDropdown(this.elements.tagFilter, this.getUniqueValues('tags'), 'Tags');
   }
 
-  function buildHuntDetailContent(hunt) {
-    const header = buildHuntHeader(hunt);
-    const sections = buildHuntSections(hunt);
-    const footer = buildHuntFooter(hunt);
+  // Show hunt details in modal
+  showHuntDetails(hunt) {
+    const modalContent = this.buildHuntDetailContent(hunt);
+    this.modalBody.innerHTML = modalContent;
+    this.modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+
+  // Build hunt detail content
+  buildHuntDetailContent(hunt) {
+    const header = this.buildHuntHeader(hunt);
+    const sections = this.buildHuntSections(hunt);
+    const footer = this.buildHuntFooter(hunt);
     return header + sections + footer;
   }
 
-  function buildHuntHeader(hunt) {
+  // Build hunt header
+  buildHuntHeader(hunt) {
     return `
       <div class="hunt-detail-header">
         <div class="hunt-detail-id">${hunt.id}</div>
@@ -141,7 +146,8 @@ class HearthApp {
     `;
   }
 
-  function buildHuntSections(hunt) {
+  // Build hunt sections
+  buildHuntSections(hunt) {
     let sections = '';
     
     if (hunt.tactic) {
@@ -175,7 +181,8 @@ class HearthApp {
     return sections;
   }
 
-  function buildHuntFooter(hunt) {
+  // Build hunt footer
+  buildHuntFooter(hunt) {
     return `
       <div class="hunt-detail-footer">
         <a href="https://github.com/THORCollective/HEARTH/blob/main/${hunt.file_path}" target="_blank" class="btn">
@@ -186,24 +193,24 @@ class HearthApp {
   }
 
   // Render hunts
-  function renderHunts(hunts) {
-    huntsGrid.innerHTML = '';
+  renderHunts(hunts) {
+    this.elements.huntsGrid.innerHTML = '';
     if (!hunts.length) {
-      huntsGrid.innerHTML = `<div class="no-results"><h3>No hunts found</h3><p>Try adjusting your search or filters.</p></div>`;
+      this.elements.huntsGrid.innerHTML = `<div class="no-results"><h3>No hunts found</h3><p>Try adjusting your search or filters.</p></div>`;
     } else {
       hunts.forEach(hunt => {
-        huntsGrid.appendChild(createHuntCard(hunt));
+        this.elements.huntsGrid.appendChild(this.createHuntCard(hunt));
       });
     }
-    huntCount.textContent = `Showing ${hunts.length} hunt${hunts.length === 1 ? '' : 's'}`;
+    this.elements.huntCount.textContent = `Showing ${hunts.length} hunt${hunts.length === 1 ? '' : 's'}`;
   }
 
   // Create a hunt card element
-  function createHuntCard(hunt) {
+  createHuntCard(hunt) {
     const card = document.createElement('div');
     card.className = 'hunt-card';
     card.style.cursor = 'pointer';
-    card.onclick = () => showHuntDetails(hunt);
+    card.onclick = () => this.showHuntDetails(hunt);
 
     // Header
     const header = document.createElement('div');
@@ -259,8 +266,8 @@ class HearthApp {
   }
 
   // Sorting logic
-  function sortHunts(hunts) {
-    const sortValue = sortHuntsSelect.value;
+  sortHunts(hunts) {
+    const sortValue = this.elements.sortHuntsSelect.value;
     const direction = sortValue.split('-')[1];
 
     // Return a sorted COPY of the array.
@@ -284,24 +291,26 @@ class HearthApp {
     });
   }
 
-  function filterAndSortHunts() {
-    const searchTerm = (searchInput.value || '').toLowerCase();
-    const selectedCategory = categoryFilter.value;
-    const selectedTactic = tacticFilter.value;
-    const selectedTag = tagFilter.value;
+  // Filter and sort hunts
+  filterAndSortHunts() {
+    const searchTerm = (this.elements.searchInput.value || '').toLowerCase();
+    const selectedCategory = this.elements.categoryFilter.value;
+    const selectedTactic = this.elements.tacticFilter.value;
+    const selectedTag = this.elements.tagFilter.value;
     
-    filteredHunts = HUNTS_DATA.filter(hunt => {
-      return matchesSearchCriteria(hunt, searchTerm) &&
-             matchesCategory(hunt, selectedCategory) &&
-             matchesTactic(hunt, selectedTactic) &&
-             matchesTag(hunt, selectedTag);
+    this.filteredHunts = this.huntsData.filter(hunt => {
+      return this.matchesSearchCriteria(hunt, searchTerm) &&
+             this.matchesCategory(hunt, selectedCategory) &&
+             this.matchesTactic(hunt, selectedTactic) &&
+             this.matchesTag(hunt, selectedTag);
     });
 
-    const sortedHunts = sortHunts(filteredHunts);
-    renderHunts(sortedHunts);
+    const sortedHunts = this.sortHunts(this.filteredHunts);
+    this.renderHunts(sortedHunts);
   }
 
-  function matchesSearchCriteria(hunt, searchTerm) {
+  // Search criteria matching
+  matchesSearchCriteria(hunt, searchTerm) {
     if (!searchTerm) return true;
     
     const searchableContent = [
@@ -316,33 +325,55 @@ class HearthApp {
     return searchableContent.includes(searchTerm);
   }
 
-  function matchesCategory(hunt, category) {
+  // Category matching
+  matchesCategory(hunt, category) {
     return !category || hunt.category === category;
   }
 
-  function matchesTactic(hunt, tactic) {
+  // Tactic matching
+  matchesTactic(hunt, tactic) {
     return !tactic || (hunt.tactic && hunt.tactic.split(',').map(tacticItem => tacticItem.trim()).includes(tactic));
   }
 
-  function matchesTag(hunt, tag) {
+  // Tag matching
+  matchesTag(hunt, tag) {
     return !tag || (hunt.tags && hunt.tags.includes(tag));
   }
 
-  // Event listeners
-  searchInput.addEventListener('input', filterAndSortHunts);
-  clearSearch.addEventListener('click', () => {
-    searchInput.value = '';
-    filterAndSortHunts();
-  });
-  categoryFilter.addEventListener('change', filterAndSortHunts);
-  tacticFilter.addEventListener('change', filterAndSortHunts);
-  tagFilter.addEventListener('change', filterAndSortHunts);
-  sortHuntsSelect.addEventListener('change', filterAndSortHunts);
+  // Setup event listeners
+  setupEventListeners() {
+    // Debounced search
+    this.elements.searchInput.addEventListener('input', () => {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => this.filterAndSortHunts(), 300);
+    });
+    
+    this.elements.clearSearch.addEventListener('click', () => {
+      this.elements.searchInput.value = '';
+      this.filterAndSortHunts();
+    });
+    
+    this.elements.categoryFilter.addEventListener('change', () => this.filterAndSortHunts());
+    this.elements.tacticFilter.addEventListener('change', () => this.filterAndSortHunts());
+    this.elements.tagFilter.addEventListener('change', () => this.filterAndSortHunts());
+    this.elements.sortHuntsSelect.addEventListener('change', () => this.filterAndSortHunts());
+  }
 
-  // Hide loading, show grid
-  loadingSection.style.display = 'none';
-  huntsGrid.style.display = 'grid';
+  // Initialize the application
+  initializeApp() {
+    this.createModal();
+    this.initializeDropdowns();
+    
+    // Hide loading, show grid
+    this.elements.loadingSection.style.display = 'none';
+    this.elements.huntsGrid.style.display = 'grid';
 
-  // Initial render
-  filterAndSortHunts();
+    // Initial render
+    this.filterAndSortHunts();
+  }
+}
+
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  new HearthApp();
 }); 
