@@ -180,7 +180,7 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
                     f"--- CHUNK {i+1}/{len(chunks)} ---\n\n{chunk}\n\nAssistant:"
                 )
                 response = anthropic_client.messages.create(
-                    model="claude-3-opus-20240229",  # or another Claude model
+                    model="claude-3-5-sonnet-20241022",  # Updated to supported model
                     max_tokens=1024,
                     temperature=0.2,
                     messages=[{"role": "user", "content": prompt}]
@@ -219,7 +219,7 @@ def summarize_cti_with_map_reduce(text, model="gpt-4", max_tokens=128000):
                 f"--- COMBINED SUMMARIES ---\n\n{combined_summary}\n\nAssistant:"
             )
             final_response = anthropic_client.messages.create(
-                model="claude-3-opus-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=2048,
                 temperature=0.2,
                 messages=[{"role": "user", "content": prompt}]
@@ -342,7 +342,7 @@ def generate_hunt_content_with_ttp_diversity(cti_text, cti_source_url, submitter
             if AI_PROVIDER == "claude":
                 full_prompt = f"\n\nHuman: {SYSTEM_PROMPT}\n\n{prompt}\n\nAssistant:"
                 response = anthropic_client.messages.create(
-                    model="claude-3-opus-20240229",
+                    model="claude-3-5-sonnet-20241022",
                     max_tokens=1200,
                     temperature=temperature,
                     messages=[{"role": "user", "content": full_prompt}]
@@ -451,7 +451,7 @@ def generate_hunt_content_basic(cti_text, cti_source_url, submitter_credit, is_r
         if AI_PROVIDER == "claude":
             full_prompt = f"\n\nHuman: {SYSTEM_PROMPT}\n\n{prompt}\n\nAssistant:"
             response = anthropic_client.messages.create(
-                model="claude-3-opus-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1200,
                 temperature=temperature,
                 messages=[{"role": "user", "content": full_prompt}]
