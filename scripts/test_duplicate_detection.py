@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 """
-Test script for duplicate detection functionality.
-This script tests the duplicate detection without requiring the full environment.
+Test the duplicate detection functionality.
 """
 
 import sys
-import os
 from pathlib import Path
-
-# Add the current directory to the path so we can import our modules
 sys.path.insert(0, str(Path(__file__).parent))
 
-def test_duplicate_detection():
-    """Test the duplicate detection functionality."""
-    
-    # Test hunt content
-    test_hunt = """
+from duplicate_detection import check_duplicates_for_new_submission
+
+# Test with a sample hunt that might be similar to existing ones
+test_content = """
 Threat actors are using PowerShell's Invoke-WebRequest cmdlet to download encrypted payloads from Discord CDN to evade network detection.
 
 | Hunt # | Idea / Hypothesis | Tactic | Notes | Tags | Submitter |
-|--------|-------------------|--------|-------|------|-----------|
+|--------|-------------------|--------|-------|------|-----------| 
 | | Threat actors are using PowerShell's Invoke-WebRequest cmdlet to download encrypted payloads from Discord CDN to evade network detection. | Defense Evasion | Based on ATT&CK technique T1071.001. | #defense-evasion #execution | test-user |
 
 ## Why
@@ -30,24 +25,36 @@ Threat actors are using PowerShell's Invoke-WebRequest cmdlet to download encryp
 - [MITRE ATT&CK T1071.001](https://attack.mitre.org/techniques/T1071/001/)
 - [Source CTI Report](https://example.com)
 """
-    
-    try:
-        from duplicate_detection import check_duplicates_for_new_submission
-        
-        print("🔍 Testing duplicate detection...")
-        result = check_duplicates_for_new_submission(test_hunt, "test-hunt.md")
-        print("✅ Duplicate detection test completed successfully!")
-        print("\n" + "="*50)
-        print("DUPLICATE DETECTION RESULT:")
-        print("="*50)
-        print(result)
-        print("="*50)
-        
-    except ImportError as e:
-        print(f"❌ Could not import duplicate detection module: {e}")
-        print("This is expected if the required dependencies are not installed.")
-    except Exception as e:
-        print(f"❌ Error during duplicate detection test: {e}")
 
-if __name__ == "__main__":
-    test_duplicate_detection() 
+print("🔍 Testing Duplicate Detection System")
+print("=" * 60)
+
+print("\nTest Hunt Content:")
+print("Title: Threat actors using PowerShell's Invoke-WebRequest cmdlet...")
+print("Tactic: Defense Evasion")
+print("Tags: #defense-evasion #execution")
+
+print("\n" + "-" * 60)
+print("Running duplicate detection...")
+
+try:
+    result = check_duplicates_for_new_submission(test_content, "test-hunt.md")
+    print("\n📋 DUPLICATE DETECTION RESULT:")
+    print("=" * 60)
+    print(result)
+    
+    # Analyze the result
+    if "no similar" in result.lower() or "unique" in result.lower():
+        print("\n✅ Result: No duplicates detected")
+    elif "similar" in result.lower() or "duplicate" in result.lower():
+        print("\n⚠️ Result: Similar hunts found")
+    else:
+        print("\n❓ Result: Unclear")
+        
+except Exception as error:
+    print(f"\n❌ Error testing duplicate detection: {error}")
+    import traceback
+    traceback.print_exc()
+
+print("\n" + "=" * 60)
+print("Test completed")
