@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Notebook generator integration script for HEARTH.
+THOR Collective HEARTH - Notebook generator integration script.
 This script adapts HEARTH hunt data to work with the threat-hunting-notebook-generator.
 """
 
@@ -22,6 +22,8 @@ def convert_hunt_to_article(hunt_data: Dict[str, Any]) -> str:
 - **Category**: {hunt_data.get('category', 'Unknown')}
 - **Tactic**: {hunt_data.get('tactic', 'Unknown')}
 - **Submitter**: {hunt_data.get('submitter', 'Unknown')}
+- **Source**: THOR Collective HEARTH Database
+- **Database**: https://hearth.thorcollective.com
 
 ## Hypothesis
 {hunt_data.get('hypothesis', 'No hypothesis provided')}
@@ -61,6 +63,11 @@ Successful execution of this hunt should help:
 - Validate security controls
 - Improve threat detection capabilities
 - Provide actionable intelligence for response teams
+
+## About THOR Collective HEARTH
+This hunt was generated from the THOR Collective HEARTH (Hunting Exchange and Research Threat Hub) database - a community-driven, open-source platform for sharing threat hunting hypotheses and methodologies.
+
+Visit https://hearth.thorcollective.com to explore more hunts and contribute to the community.
 """
     
     return article_content
