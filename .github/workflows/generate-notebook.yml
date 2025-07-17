@@ -1,0 +1,188 @@
+name: Generate Threat Hunting Notebook
+
+on:
+  repository_dispatch:
+    types: [generate-notebook]
+  workflow_dispatch:
+    inputs:
+      hunt_id:
+        description: 'Hunt ID to generate notebook for'
+        required: true
+        type: string
+      hunt_title:
+        description: 'Hunt title'
+        required: true
+        type: string
+      hunt_hypothesis:
+        description: 'Hunt hypothesis'
+        required: true
+        type: string
+      hunt_tactic:
+        description: 'Hunt tactic'
+        required: false
+        type: string
+      hunt_tags:
+        description: 'Hunt tags (comma separated)'
+        required: false
+        type: string
+      hunt_references:
+        description: 'Hunt references'
+        required: false
+        type: string
+      hunt_why:
+        description: 'Hunt why section'
+        required: false
+        type: string
+      hunt_submitter:
+        description: 'Hunt submitter'
+        required: false
+        type: string
+
+jobs:
+  generate-notebook:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout HEARTH repository
+        uses: actions/checkout@v4
+        with:
+          path: hearth
+
+      - name: Checkout threat-hunting-notebook-generator
+        uses: actions/checkout@v4
+        with:
+          repository: THORCollective/threat-hunting-notebook-generator
+          path: notebook-generator
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install notebook generator dependencies
+        run: |
+          cd notebook-generator
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nbformat jupyter
+
+      - name: Prepare hunt data
+        id: prepare-data
+        run: |
+          # Get hunt data from inputs or event payload
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            HUNT_ID="${{ github.event.client_payload.hunt_id }}"
+            HUNT_TITLE="${{ github.event.client_payload.hunt_title }}"
+            HUNT_HYPOTHESIS="${{ github.event.client_payload.hunt_hypothesis }}"
+            HUNT_TACTIC="${{ github.event.client_payload.hunt_tactic }}"
+            HUNT_TAGS="${{ github.event.client_payload.hunt_tags }}"
+            HUNT_REFERENCES="${{ github.event.client_payload.hunt_references }}"
+            HUNT_WHY="${{ github.event.client_payload.hunt_why }}"
+            HUNT_SUBMITTER="${{ github.event.client_payload.hunt_submitter }}"
+          else
+            HUNT_ID="${{ github.event.inputs.hunt_id }}"
+            HUNT_TITLE="${{ github.event.inputs.hunt_title }}"
+            HUNT_HYPOTHESIS="${{ github.event.inputs.hunt_hypothesis }}"
+            HUNT_TACTIC="${{ github.event.inputs.hunt_tactic }}"
+            HUNT_TAGS="${{ github.event.inputs.hunt_tags }}"
+            HUNT_REFERENCES="${{ github.event.inputs.hunt_references }}"
+            HUNT_WHY="${{ github.event.inputs.hunt_why }}"
+            HUNT_SUBMITTER="${{ github.event.inputs.hunt_submitter }}"
+          fi
+          
+          # Set outputs
+          echo "hunt_id=${HUNT_ID}" >> $GITHUB_OUTPUT
+          echo "hunt_title=${HUNT_TITLE}" >> $GITHUB_OUTPUT
+          echo "hunt_hypothesis=${HUNT_HYPOTHESIS}" >> $GITHUB_OUTPUT
+          echo "hunt_tactic=${HUNT_TACTIC}" >> $GITHUB_OUTPUT
+          echo "hunt_tags=${HUNT_TAGS}" >> $GITHUB_OUTPUT
+          echo "hunt_references=${HUNT_REFERENCES}" >> $GITHUB_OUTPUT
+          echo "hunt_why=${HUNT_WHY}" >> $GITHUB_OUTPUT
+          echo "hunt_submitter=${HUNT_SUBMITTER}" >> $GITHUB_OUTPUT
+
+      - name: Create hunt article file
+        run: |
+          mkdir -p temp-hunt-data
+          cat > temp-hunt-data/hunt_article.md << 'EOF'
+          # ${{ steps.prepare-data.outputs.hunt_title }}
+          
+          ## Hunt ID: ${{ steps.prepare-data.outputs.hunt_id }}
+          
+          ## Hypothesis
+          ${{ steps.prepare-data.outputs.hunt_hypothesis }}
+          
+          ## Tactic
+          ${{ steps.prepare-data.outputs.hunt_tactic }}
+          
+          ## Tags
+          ${{ steps.prepare-data.outputs.hunt_tags }}
+          
+          ## Why
+          ${{ steps.prepare-data.outputs.hunt_why }}
+          
+          ## References
+          ${{ steps.prepare-data.outputs.hunt_references }}
+          
+          ## Submitter
+          ${{ steps.prepare-data.outputs.hunt_submitter }}
+          EOF
+
+      - name: Generate notebook
+        run: |
+          cd notebook-generator
+          python -m src.main \
+            --input ../temp-hunt-data/hunt_article.md \
+            --output ../generated_notebooks/${{ steps.prepare-data.outputs.hunt_id }}_threat_hunting_notebook.ipynb \
+            --verbose
+
+      - name: Upload notebook artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: threat-hunting-notebook-${{ steps.prepare-data.outputs.hunt_id }}
+          path: generated_notebooks/${{ steps.prepare-data.outputs.hunt_id }}_threat_hunting_notebook.ipynb
+          retention-days: 30
+
+      - name: Create downloadable release
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          # Create a simple HTML page with download link
+          mkdir -p notebook-downloads
+          cat > notebook-downloads/${{ steps.prepare-data.outputs.hunt_id }}.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Download Threat Hunting Notebook</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: #121212; color: #e0e0e0; }
+                  .container { max-width: 600px; margin: 0 auto; text-align: center; }
+                  .btn { background: #6a0dad; color: white; padding: 15px 30px; border: none; border-radius: 5px; text-decoration: none; font-size: 16px; }
+                  .btn:hover { background: #5a0b9a; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Threat Hunting Notebook Ready</h1>
+                  <p>Your notebook for hunt <strong>${{ steps.prepare-data.outputs.hunt_id }}</strong> has been generated successfully!</p>
+                  <p><a href="https://github.com/THORCollective/HEARTH/actions/runs/${{ github.run_id }}" class="btn">Download from GitHub Actions</a></p>
+                  <p><small>The notebook will be available in the Actions artifacts for 30 days.</small></p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Deploy to GitHub Pages (if needed)
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          cd hearth
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Copy generated HTML to a temporary branch or folder
+          mkdir -p notebook-downloads
+          cp ../notebook-downloads/${{ steps.prepare-data.outputs.hunt_id }}.html notebook-downloads/
+          
+          # Note: In a real implementation, you might want to commit this to a separate branch
+          # or use a different deployment strategy
+          
+          echo "Notebook generation completed for hunt ${{ steps.prepare-data.outputs.hunt_id }}"
