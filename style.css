@@ -110,7 +110,7 @@ body {
     background-color: #6a0dad;
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 1rem;
@@ -121,13 +121,14 @@ body {
 
 .btn-primary:hover {
     background-color: #5a0b9a;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
     background-color: #4a4a4a;
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 1rem;
@@ -138,6 +139,7 @@ body {
 
 .btn-secondary:hover {
     background-color: #5a5a5a;
+    transform: translateY(-1px);
 }
 
 /* JSON Data Display Styles */
@@ -641,6 +643,10 @@ main {
     margin-top: 30px;
     padding-top: 20px;
     border-top: 1px solid #333;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 /* Loading Spinner */
