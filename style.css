@@ -14,7 +14,11 @@ body {
     bottom: 20px;
     right: 20px;
     width: 350px;
-    max-height: 500px;
+    height: 500px;
+    min-width: 300px;
+    min-height: 300px;
+    max-width: 800px;
+    max-height: 80vh;
     background-color: #1e1e1e;
     border: 2px solid #6a0dad;
     border-radius: 12px;
@@ -23,10 +27,114 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: none;
     flex-direction: column;
+    resize: none;
+    overflow: hidden;
+}
+
+/* Custom resize handle */
+.chat-widget::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(-45deg, transparent 30%, #6a0dad 30%, #6a0dad 40%, transparent 40%, transparent 60%, #6a0dad 60%, #6a0dad 70%, transparent 70%);
+    cursor: nw-resize;
+    border-bottom-right-radius: 10px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.chat-widget:hover::after {
+    opacity: 1;
+}
+
+/* Resize handles for different directions */
+.chat-resize-handle {
+    position: absolute;
+    background: transparent;
+    z-index: 10;
+}
+
+.chat-resize-handle.resize-right {
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.chat-resize-handle.resize-bottom {
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    cursor: ns-resize;
+}
+
+.chat-resize-handle.resize-corner {
+    bottom: -3px;
+    right: -3px;
+    width: 20px;
+    height: 20px;
+    cursor: nw-resize;
+}
+
+/* Header resize controls */
+.chat-header-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.chat-size-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-size-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+    .chat-widget {
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        width: auto;
+        max-width: none;
+        min-width: 280px;
+    }
+    
+    .chat-toggle {
+        right: 10px;
+        bottom: 10px;
+    }
 }
 
 .chat-widget.open {
     display: flex;
+}
+
+.chat-widget.chat-resizing {
+    transition: none !important;
+}
+
+.chat-widget.chat-resizing * {
+    pointer-events: none;
 }
 
 .chat-header {
@@ -64,7 +172,6 @@ body {
     flex: 1;
     padding: 16px;
     overflow-y: auto;
-    max-height: 300px;
     display: flex;
     flex-direction: column;
     gap: 12px;

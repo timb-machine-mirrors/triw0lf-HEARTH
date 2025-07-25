@@ -64,6 +64,23 @@
                     tests.push('❌ Search functionality not working');
                 }
                 
+                // Test 6: Check resize functionality
+                const resizeHandles = document.querySelectorAll('.chat-resize-handle');
+                if (resizeHandles.length === 3) {
+                    tests.push('✅ Resize handles created (3 handles)');
+                } else {
+                    tests.push('❌ Resize handles not found (' + resizeHandles.length + ' found)');
+                }
+                
+                // Test 7: Check resize controls
+                const minimizeBtn = document.querySelector('#minimize-btn');
+                const maximizeBtn = document.querySelector('#maximize-btn');
+                if (minimizeBtn && maximizeBtn) {
+                    tests.push('✅ Resize control buttons created');
+                } else {
+                    tests.push('❌ Resize control buttons not found');
+                }
+                
                 // Update test results
                 testResults.innerHTML = tests.map(test => '<li>' + test + '</li>').join('');
                 

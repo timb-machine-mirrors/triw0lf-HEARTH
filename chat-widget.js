@@ -16,6 +16,16 @@ class HearthChatWidget {
       tacticsExploration: true
     };
     
+    // Resize functionality
+    this.isResizing = false;
+    this.resizeDirection = null;
+    this.startX = 0;
+    this.startY = 0;
+    this.startWidth = 0;
+    this.startHeight = 0;
+    this.isMaximized = false;
+    this.originalDimensions = { width: 350, height: 500, right: 20, bottom: 20 };
+    
     this.init();
   }
   
@@ -39,13 +49,20 @@ class HearthChatWidget {
     chatWidget.innerHTML = `
       <div class="chat-header">
         <span>🔥 HEARTH Hunt Assistant</span>
-        <button class="close-btn" aria-label="Close chat">×</button>
+        <div class="chat-header-controls">
+          <button class="chat-size-btn" id="minimize-btn" title="Minimize">−</button>
+          <button class="chat-size-btn" id="maximize-btn" title="Maximize">□</button>
+          <button class="close-btn" aria-label="Close chat">×</button>
+        </div>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-container">
         <input type="text" class="chat-input" placeholder="Ask about threat hunts..." maxlength="500">
         <button class="chat-send-btn">Send</button>
       </div>
+      <div class="chat-resize-handle resize-right"></div>
+      <div class="chat-resize-handle resize-bottom"></div>
+      <div class="chat-resize-handle resize-corner"></div>
     `;
     document.body.appendChild(chatWidget);
     
@@ -56,6 +73,9 @@ class HearthChatWidget {
     this.chatInput = chatWidget.querySelector('.chat-input');
     this.sendButton = chatWidget.querySelector('.chat-send-btn');
     this.closeButton = chatWidget.querySelector('.close-btn');
+    this.minimizeBtn = chatWidget.querySelector('#minimize-btn');
+    this.maximizeBtn = chatWidget.querySelector('#maximize-btn');
+    this.resizeHandles = chatWidget.querySelectorAll('.chat-resize-handle');
   }
   
   setupEventListeners() {
@@ -83,6 +103,13 @@ class HearthChatWidget {
         this.closeChat();
       }
     });
+    
+    // Size control buttons
+    this.minimizeBtn.addEventListener('click', () => this.minimizeChat());
+    this.maximizeBtn.addEventListener('click', () => this.toggleMaximize());
+    
+    // Resize functionality
+    this.setupResizeHandlers();
   }
   
   toggleChat() {
@@ -488,6 +515,166 @@ Just ask me in natural language! What would you like to explore?`;
   
   scrollToBottom() {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+  }
+  
+  // Resize functionality methods
+  setupResizeHandlers() {
+    this.resizeHandles.forEach(handle => {
+      handle.addEventListener('mousedown', (e) => this.startResize(e));
+    });
+    
+    document.addEventListener('mousemove', (e) => this.doResize(e));
+    document.addEventListener('mouseup', () => this.stopResize());
+  }
+  
+  startResize(e) {
+    e.preventDefault();
+    this.isResizing = true;
+    
+    // Determine resize direction based on handle class
+    if (e.target.classList.contains('resize-right')) {
+      this.resizeDirection = 'right';
+    } else if (e.target.classList.contains('resize-bottom')) {
+      this.resizeDirection = 'bottom';
+    } else if (e.target.classList.contains('resize-corner')) {
+      this.resizeDirection = 'corner';
+    }
+    
+    // Store starting values
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    this.startWidth = parseInt(this.chatWidget.offsetWidth, 10);
+    this.startHeight = parseInt(this.chatWidget.offsetHeight, 10);
+    
+    // Add resizing class for styling
+    this.chatWidget.classList.add('chat-resizing');
+    document.body.style.cursor = this.getCursorForDirection(this.resizeDirection);
+    document.body.style.userSelect = 'none';
+  }
+  
+  doResize(e) {
+    if (!this.isResizing) return;
+    
+    const deltaX = e.clientX - this.startX;
+    const deltaY = e.clientY - this.startY;
+    
+    let newWidth = this.startWidth;
+    let newHeight = this.startHeight;
+    
+    // Calculate new dimensions based on resize direction
+    if (this.resizeDirection === 'right' || this.resizeDirection === 'corner') {
+      newWidth = this.startWidth + deltaX;
+    }
+    
+    if (this.resizeDirection === 'bottom' || this.resizeDirection === 'corner') {
+      newHeight = this.startHeight + deltaY;
+    }
+    
+    // Apply constraints
+    const minWidth = 300;
+    const minHeight = 300;
+    const maxWidth = Math.min(800, window.innerWidth - 40);
+    const maxHeight = Math.min(window.innerHeight * 0.8, window.innerHeight - 40);
+    
+    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+    newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+    
+    // Apply new dimensions
+    this.chatWidget.style.width = newWidth + 'px';
+    this.chatWidget.style.height = newHeight + 'px';
+  }
+  
+  stopResize() {
+    if (!this.isResizing) return;
+    
+    this.isResizing = false;
+    this.resizeDirection = null;
+    
+    // Remove resizing styles
+    this.chatWidget.classList.remove('chat-resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    
+    // Store current dimensions
+    this.originalDimensions.width = this.chatWidget.offsetWidth;
+    this.originalDimensions.height = this.chatWidget.offsetHeight;
+  }
+  
+  getCursorForDirection(direction) {
+    switch (direction) {
+      case 'right': return 'ew-resize';
+      case 'bottom': return 'ns-resize';
+      case 'corner': return 'nw-resize';
+      default: return 'default';
+    }
+  }
+  
+  minimizeChat() {
+    if (this.isMaximized) {
+      this.toggleMaximize(); // First restore from maximized state
+    }
+    
+    // Minimize to just the header
+    this.chatWidget.style.height = '60px';
+    this.messagesContainer.style.display = 'none';
+    this.chatInput.parentElement.style.display = 'none';
+    this.minimizeBtn.innerHTML = '+';
+    this.minimizeBtn.title = 'Restore';
+    
+    // Update click handler
+    this.minimizeBtn.onclick = () => this.restoreChat();
+  }
+  
+  restoreChat() {
+    // Restore to original size
+    this.chatWidget.style.height = this.originalDimensions.height + 'px';
+    this.messagesContainer.style.display = 'flex';
+    this.chatInput.parentElement.style.display = 'flex';
+    this.minimizeBtn.innerHTML = '−';
+    this.minimizeBtn.title = 'Minimize';
+    
+    // Restore original click handler
+    this.minimizeBtn.onclick = () => this.minimizeChat();
+    
+    this.scrollToBottom();
+  }
+  
+  toggleMaximize() {
+    if (this.isMaximized) {
+      // Restore to original size
+      this.chatWidget.style.width = this.originalDimensions.width + 'px';
+      this.chatWidget.style.height = this.originalDimensions.height + 'px';
+      this.chatWidget.style.right = this.originalDimensions.right + 'px';
+      this.chatWidget.style.bottom = this.originalDimensions.bottom + 'px';
+      this.chatWidget.style.left = 'auto';
+      this.chatWidget.style.top = 'auto';
+      
+      this.maximizeBtn.innerHTML = '□';
+      this.maximizeBtn.title = 'Maximize';
+      this.isMaximized = false;
+    } else {
+      // Store current dimensions before maximizing
+      this.originalDimensions = {
+        width: this.chatWidget.offsetWidth,
+        height: this.chatWidget.offsetHeight,
+        right: parseInt(this.chatWidget.style.right || '20px'),
+        bottom: parseInt(this.chatWidget.style.bottom || '20px')
+      };
+      
+      // Maximize to full screen (with margins)
+      this.chatWidget.style.width = 'calc(100vw - 40px)';
+      this.chatWidget.style.height = 'calc(100vh - 40px)';
+      this.chatWidget.style.right = '20px';
+      this.chatWidget.style.bottom = '20px';
+      this.chatWidget.style.left = '20px';
+      this.chatWidget.style.top = '20px';
+      
+      this.maximizeBtn.innerHTML = '⧉';
+      this.maximizeBtn.title = 'Restore';
+      this.isMaximized = true;
+    }
+    
+    setTimeout(() => this.scrollToBottom(), 100);
   }
 }
 
