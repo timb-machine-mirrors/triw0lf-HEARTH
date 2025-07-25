@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEARTH Chat Widget Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>🔥 HEARTH Chat Widget Test</h1>
+    <p>This is a test page to verify the chat widget functionality.</p>
+    
+    <div id="test-info">
+        <h2>Test Status</h2>
+        <ul id="test-results">
+            <li>Loading...</li>
+        </ul>
+    </div>
+
+    <script src="hunts-data.js"></script>
+    <script src="chat-widget.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const testResults = document.getElementById('test-results');
+            const tests = [];
+            
+            // Test 1: Check if HUNTS_DATA is loaded
+            if (typeof HUNTS_DATA !== 'undefined' && HUNTS_DATA.length > 0) {
+                tests.push('✅ HUNTS_DATA loaded successfully (' + HUNTS_DATA.length + ' hunts)');
+            } else {
+                tests.push('❌ HUNTS_DATA not loaded');
+            }
+            
+            // Test 2: Check if chat widget is instantiated
+            setTimeout(() => {
+                if (typeof window.hearthChatWidget !== 'undefined') {
+                    tests.push('✅ Chat widget instantiated successfully');
+                } else {
+                    tests.push('❌ Chat widget not instantiated');
+                }
+                
+                // Test 3: Check if chat toggle button exists
+                const chatToggle = document.querySelector('.chat-toggle');
+                if (chatToggle) {
+                    tests.push('✅ Chat toggle button created');
+                } else {
+                    tests.push('❌ Chat toggle button not found');
+                }
+                
+                // Test 4: Check if chat widget exists
+                const chatWidget = document.querySelector('.chat-widget');
+                if (chatWidget) {
+                    tests.push('✅ Chat widget element created');
+                } else {
+                    tests.push('❌ Chat widget element not found');
+                }
+                
+                // Test 5: Check search functionality
+                if (window.hearthChatWidget && typeof window.hearthChatWidget.searchHunts === 'function') {
+                    const results = window.hearthChatWidget.searchHunts('persistence');
+                    tests.push('✅ Search functionality working (' + results.length + ' results for "persistence")');
+                } else {
+                    tests.push('❌ Search functionality not working');
+                }
+                
+                // Update test results
+                testResults.innerHTML = tests.map(test => '<li>' + test + '</li>').join('');
+                
+                // Auto-open chat for demonstration
+                setTimeout(() => {
+                    if (window.hearthChatWidget) {
+                        window.hearthChatWidget.openChat();
+                    }
+                }, 2000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
