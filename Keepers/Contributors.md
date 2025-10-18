@@ -13,8 +13,8 @@ Everyone listed below has submitted ideas that have been added to HEARTH. This l
 | 7 | Azrara | 2 |
 | 8 | Audra Streetman | 2 |
 | 9 | Ryan Fetterman | 2 |
-| 10 | wikijm | 1 |
-| 11 | hu983r | 1 |
-| 12 | Cody Lunday | 1 |
+| 10 | hu983r | 1 |
+| 11 | Cody Lunday | 1 |
+| 12 | wikijm | 1 |
 | 13 | Jon Perez | 1 |
 | 14 | Claire Stromboe | 1 |
